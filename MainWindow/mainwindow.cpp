@@ -1,5 +1,5 @@
 #include "mainwindow.h"
-#include "authentication.h"
+#include "../BusinessLogic/authentication.h"
 #include <QPushButton>
 #include <QVBoxLayout>
 #include <QLineEdit>
@@ -28,14 +28,14 @@ MainWindow::MainWindow(QWidget *parent)
     lineEditLogin->setPlaceholderText("Логин");
     lineEditLogin->setMinimumWidth(200);
     lineEditLogin->setMaximumWidth(300);
-    lineEditLogin->setStyleSheet("QLineEdit { border: none; border-radius: 5px; padding: 5px; }");
+    lineEditLogin->setStyleSheet("QLineEdit { border: 1px solid grey; border-radius: 5px; padding: 5px; }");
 
     lineEditPassword = new QLineEdit();
     lineEditPassword->setEchoMode(QLineEdit::Password);
     lineEditPassword->setPlaceholderText("Пароль");
     lineEditPassword->setMinimumWidth(200);
     lineEditPassword->setMaximumWidth(300);
-    lineEditPassword->setStyleSheet("QLineEdit { border: none; border-radius: 5px; padding: 5px; }");
+    lineEditPassword->setStyleSheet("QLineEdit { border: 1px solid grey; border-radius: 5px; padding: 5px; }");
 
     lableInfo = new QLabel();
     lableInfo->setAlignment(Qt::AlignCenter);
@@ -93,8 +93,8 @@ void MainWindow::onLoginButtonClicked()
 void MainWindow::updateLineEditStyle(QLineEdit* edit, bool isValid)
 {
     if (isValid) {
-        edit->setStyleSheet("QLineEdit { border: none; border-radius: 5px; padding: 5px; }");
+        edit->setStyleSheet("QLineEdit { border: 1px solid grey; border-radius: 5px; padding: 5px; }");
     } else {
-        edit->setStyleSheet("QLineEdit { border: 2px solid red; border-radius: 5px; padding: 5px; }");
+        edit->setStyleSheet("QLineEdit { border: 1px solid red; border-radius: 5px; padding: 5px; }");
     }
 }
