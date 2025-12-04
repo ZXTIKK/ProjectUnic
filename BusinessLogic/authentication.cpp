@@ -1,8 +1,6 @@
 #include "authentication.h"
 
 
-#include "authentication.h"
-
 Qt::ConnectionType Authentication::connect = Qt::AutoConnection;
 bool Authentication::userConnect = false;
 

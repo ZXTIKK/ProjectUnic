@@ -5,6 +5,7 @@ project(ProjectUnic VERSION 0.1 LANGUAGES CXX)
 set(CMAKE_AUTOUIC ON)
 set(CMAKE_AUTOMOC ON)
 set(CMAKE_AUTORCC ON)
+set(CMAKE_AUTOUIC_SEARCH_PATHS UIfiles)
 
 set(CMAKE_CXX_STANDARD 17)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
@@ -24,8 +25,9 @@ if(${QT_VERSION_MAJOR} GREATER_EQUAL 6)
         ${PROJECT_SOURCES}
 
 
-        LoginPage/Login.cpp LoginPage/Login.h
-        BusinessLogic/authentication.cpp BusinessLogic/authentication.h MainWindow/mainwindow.cpp MainWindow/mainwindow.h MainWindow/mainwindow.ui
+        BusinessLogic/authentication.cpp BusinessLogic/authentication.h MainWindow/mainwindow.cpp MainWindow/mainwindow.h UIfiles/mainwindow.ui
+        LoginPage/loginform.h LoginPage/loginform.cpp UIfiles/loginform.ui
+        BasicPage/basicform.h BasicPage/basicform.cpp UIfiles/basicform.ui
     )
 # Define target properties for Android with Qt 6 as:
 #    set_property(TARGET ProjectUnic APPEND PROPERTY QT_ANDROID_PACKAGE_SOURCE_DIR
