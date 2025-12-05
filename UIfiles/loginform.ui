@@ -46,7 +46,7 @@
     </spacer>
    </item>
    <item row="6" column="1">
-    <widget class="QPushButton" name="pushButton">
+    <widget class="QPushButton" name="pushButton_auth">
      <property name="sizePolicy">
       <sizepolicy hsizetype="Minimum" vsizetype="Preferred">
        <horstretch>0</horstretch>
@@ -76,6 +76,9 @@
      <property name="cursor">
       <cursorShape>PointingHandCursor</cursorShape>
      </property>
+     <property name="styleSheet">
+      <string notr="true">border:1px solid #696666; border-radius: 4px;</string>
+     </property>
      <property name="text">
       <string>Войти</string>
      </property>
@@ -85,7 +88,10 @@
     </widget>
    </item>
    <item row="5" column="1">
-    <widget class="QLabel" name="label_2">
+    <widget class="QLabel" name="label_error">
+     <property name="styleSheet">
+      <string notr="true">color:red;</string>
+     </property>
      <property name="text">
       <string/>
      </property>
@@ -111,7 +117,7 @@
     </spacer>
    </item>
    <item row="3" column="1">
-    <widget class="QLineEdit" name="lineEdit">
+    <widget class="QLineEdit" name="lineEdit_login">
      <property name="minimumSize">
       <size>
        <width>150</width>
@@ -132,6 +138,9 @@
      <property name="cursor">
       <cursorShape>IBeamCursor</cursorShape>
      </property>
+     <property name="styleSheet">
+      <string notr="true">border:1px solid #696666; border-radius: 4px;</string>
+     </property>
      <property name="placeholderText">
       <string>Логин</string>
      </property>
@@ -151,7 +160,7 @@
     </spacer>
    </item>
    <item row="4" column="1">
-    <widget class="QLineEdit" name="lineEdit_2">
+    <widget class="QLineEdit" name="lineEdit_password">
      <property name="minimumSize">
       <size>
        <width>150</width>
@@ -168,6 +177,9 @@
       <font>
        <family>Leelawadee UI</family>
       </font>
+     </property>
+     <property name="styleSheet">
+      <string notr="true">border:1px solid #696666; border-radius: 4px;</string>
      </property>
      <property name="inputMask">
       <string/>
