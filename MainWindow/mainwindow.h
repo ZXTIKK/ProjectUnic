@@ -14,16 +14,7 @@ class MainWindow : public QMainWindow
 public:
     MainWindow(QWidget *parent = nullptr);
     ~MainWindow();
-    void updateLineEditStyle(QLineEdit*,bool);
 
-private slots:
-    void onLoginButtonClicked();
-
-private:
-    QLineEdit* lineEditLogin;
-    QLineEdit* lineEditPassword;
-    QPushButton* btnAuth;
-    QLabel* lableInfo;
 };
 
 #endif // MAINWINDOW_H
