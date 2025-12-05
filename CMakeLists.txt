@@ -16,7 +16,7 @@ find_package(QT NAMES Qt6 Qt5 REQUIRED COMPONENTS Core Widgets)
 set(QT_VERSION_MAJOR ${QT_VERSION_MAJOR})
 
 # === Подключаем компоненты Qt ===
-find_package(Qt${QT_VERSION_MAJOR} REQUIRED COMPONENTS Core Widgets)
+find_package(Qt${QT_VERSION_MAJOR} REQUIRED COMPONENTS Core Widgets Sql)
 
 # Для SQL — подключаем отдельно (не входит в Widgets/Core по умолчанию)
 find_package(Qt${QT_VERSION_MAJOR} REQUIRED COMPONENTS Sql)
@@ -42,6 +42,7 @@ if(${QT_VERSION_MAJOR} GREATER_EQUAL 6)
     qt_add_executable(ProjectUnic
         MANUAL_FINALIZATION
         ${PROJECT_SOURCES}
+        BusinessLogic/productmanager.h BusinessLogic/productmanager.cpp
     )
 
     # Линкуем нужные модули ПОСЛЕ создания таргета
