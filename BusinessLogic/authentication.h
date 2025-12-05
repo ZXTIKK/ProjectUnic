@@ -1,23 +1,22 @@
 #ifndef AUTHENTICATION_H
 #define AUTHENTICATION_H
 
-#include <QApplication>
+#include <QSqlDatabase>
 #include <QString>
-#include <QDebug>
 
 class Authentication
 {
-
-
 private:
-    static Qt::ConnectionType connect;
+    static const QString CONNECTION_NAME;
     static bool userConnect;
+
     static bool createConnect(QString login, QString password);
 
 public:
+    static bool authentication(QString login, QString password);
     static bool userAuth();
-    static Qt::ConnectionType getConnect();
-    static bool authentication(QString, QString);
+
+    static QSqlDatabase getConnect();
 };
 
 #endif // AUTHENTICATION_H

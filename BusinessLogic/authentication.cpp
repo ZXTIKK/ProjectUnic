@@ -1,17 +1,22 @@
 #include "authentication.h"
 #include <QCoreApplication>
-#include <QSqlDatabase>
 #include <QSqlQuery>
 #include <QSqlError>
 #include <QDebug>
 #include <QString>
 
-Qt::ConnectionType Authentication::connect = Qt::AutoConnection;
+
+const QString Authentication::CONNECTION_NAME = "Connection";
 bool Authentication::userConnect = false;
 
 bool Authentication::createConnect(QString login, QString password)
 {
-    QSqlDatabase db = QSqlDatabase::addDatabase("QPSQL");
+
+    if (QSqlDatabase::contains(CONNECTION_NAME)) {
+        QSqlDatabase::removeDatabase(CONNECTION_NAME);
+    }
+
+    QSqlDatabase db = QSqlDatabase::addDatabase("QPSQL", CONNECTION_NAME);
 
     db.setHostName("localhost");
     db.setPort(5432);
@@ -23,30 +28,34 @@ bool Authentication::createConnect(QString login, QString password)
     if (!db.open()) {
         qCritical() << "Ошибка входа или подключения к БД:"
                     << db.lastError().text();
+
+        Authentication::userConnect = false;
+
+        QSqlDatabase::removeDatabase(CONNECTION_NAME);
         return false;
     }
 
     qDebug() << "Аутентификация успешна для пользователя:" << login;
 
-    db.close();
+    Authentication::userConnect = true;
 
     return true;
 }
 
 bool Authentication::userAuth()
 {
-    qDebug() << "userAuth";
+    qDebug() << "userAuth: Проверка статуса аутентификации";
     return userConnect;
 }
 
-Qt::ConnectionType Authentication::getConnect()
+QSqlDatabase Authentication::getConnect()
 {
-    qDebug() << "getConnect";
-    return connect;
+    qDebug() << "getConnect: Возврат активного соединения";
+    return QSqlDatabase::database(CONNECTION_NAME);
 }
 
 bool Authentication::authentication(QString login, QString password)
 {
-    qDebug() << "authentication";
+    qDebug() << "authentication: Попытка аутентификации";
     return createConnect(login, password);
 }
