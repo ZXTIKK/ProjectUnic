@@ -7,6 +7,8 @@
 
 class Authentication
 {
+
+
 private:
     static Qt::ConnectionType connect;
     static bool userConnect;

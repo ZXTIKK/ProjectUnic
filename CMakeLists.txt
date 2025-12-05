@@ -7,54 +7,68 @@ set(CMAKE_AUTOMOC ON)
 set(CMAKE_AUTORCC ON)
 set(CMAKE_AUTOUIC_SEARCH_PATHS UIfiles)
 
+# Устанавливаем стандарт C++17
 set(CMAKE_CXX_STANDARD 17)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 
-find_package(QT NAMES Qt6 Qt5 REQUIRED COMPONENTS Widgets)
-find_package(Qt${QT_VERSION_MAJOR} REQUIRED COMPONENTS Widgets)
+# === Определяем версию Qt ===
+find_package(QT NAMES Qt6 Qt5 REQUIRED COMPONENTS Core Widgets)
+set(QT_VERSION_MAJOR ${QT_VERSION_MAJOR})
 
+# === Подключаем компоненты Qt ===
+find_package(Qt${QT_VERSION_MAJOR} REQUIRED COMPONENTS Core Widgets)
+
+# Для SQL — подключаем отдельно (не входит в Widgets/Core по умолчанию)
+find_package(Qt${QT_VERSION_MAJOR} REQUIRED COMPONENTS Sql)
+
+# === Список исходников ===
 set(PROJECT_SOURCES
-        main.cpp
-
-
+    main.cpp
+    BusinessLogic/authentication.cpp
+    BusinessLogic/authentication.h
+    MainWindow/mainwindow.cpp
+    MainWindow/mainwindow.h
+    UIfiles/mainwindow.ui
+    LoginPage/loginform.cpp
+    LoginPage/loginform.h
+    UIfiles/loginform.ui
+    BasicPage/basicform.cpp
+    BasicPage/basicform.h
+    UIfiles/basicform.ui
 )
 
+# === Создаём таргет в зависимости от версии Qt ===
 if(${QT_VERSION_MAJOR} GREATER_EQUAL 6)
     qt_add_executable(ProjectUnic
         MANUAL_FINALIZATION
         ${PROJECT_SOURCES}
-
-
-        BusinessLogic/authentication.cpp BusinessLogic/authentication.h MainWindow/mainwindow.cpp MainWindow/mainwindow.h UIfiles/mainwindow.ui
-        LoginPage/loginform.h LoginPage/loginform.cpp UIfiles/loginform.ui
-        BasicPage/basicform.h BasicPage/basicform.cpp UIfiles/basicform.ui
     )
-# Define target properties for Android with Qt 6 as:
-#    set_property(TARGET ProjectUnic APPEND PROPERTY QT_ANDROID_PACKAGE_SOURCE_DIR
-#                 ${CMAKE_CURRENT_SOURCE_DIR}/android)
-# For more information, see https://doc.qt.io/qt-6/qt-add-executable.html#target-creation
+
+    # Линкуем нужные модули ПОСЛЕ создания таргета
+    target_link_libraries(ProjectUnic PRIVATE
+        Qt6::Widgets
+        Qt6::Sql
+    )
+
 else()
+    # Qt5 — используем add_executable (или add_library для Android)
     if(ANDROID)
-        add_library(ProjectUnic SHARED
-            ${PROJECT_SOURCES}
-        )
-# Define properties for Android with Qt 5 after find_package() calls as:
-#    set(ANDROID_PACKAGE_SOURCE_DIR "${CMAKE_CURRENT_SOURCE_DIR}/android")
+        add_library(ProjectUnic SHARED ${PROJECT_SOURCES})
     else()
-        add_executable(ProjectUnic
-            ${PROJECT_SOURCES}
-        )
+        add_executable(ProjectUnic ${PROJECT_SOURCES})
     endif()
+
+    target_link_libraries(ProjectUnic PRIVATE
+        Qt5::Widgets
+        Qt5::Sql
+    )
 endif()
 
-target_link_libraries(ProjectUnic PRIVATE Qt${QT_VERSION_MAJOR}::Widgets)
-
-# Qt for iOS sets MACOSX_BUNDLE_GUI_IDENTIFIER automatically since Qt 6.1.
-# If you are developing for iOS or macOS you should consider setting an
-# explicit, fixed bundle identifier manually though.
+# === Установка свойств таргета ===
 if(${QT_VERSION} VERSION_LESS 6.1.0)
-  set(BUNDLE_ID_OPTION MACOSX_BUNDLE_GUI_IDENTIFIER com.example.ProjectUnic)
+    set(BUNDLE_ID_OPTION MACOSX_BUNDLE_GUI_IDENTIFIER com.example.ProjectUnic)
 endif()
+
 set_target_properties(ProjectUnic PROPERTIES
     ${BUNDLE_ID_OPTION}
     MACOSX_BUNDLE_BUNDLE_VERSION ${PROJECT_VERSION}
@@ -63,6 +77,7 @@ set_target_properties(ProjectUnic PROPERTIES
     WIN32_EXECUTABLE TRUE
 )
 
+# === Установка (необязательно, но оставим) ===
 include(GNUInstallDirs)
 install(TARGETS ProjectUnic
     BUNDLE DESTINATION .
@@ -70,6 +85,7 @@ install(TARGETS ProjectUnic
     RUNTIME DESTINATION ${CMAKE_INSTALL_BINDIR}
 )
 
-if(QT_VERSION_MAJOR EQUAL 6)
+# === Финализация (обязательно при MANUAL_FINALIZATION) ===
+if(${QT_VERSION_MAJOR} EQUAL 6)
     qt_finalize_executable(ProjectUnic)
 endif()
