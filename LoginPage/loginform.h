@@ -3,9 +3,7 @@
 
 #include <QWidget>
 
-namespace Ui {
-class LoginForm;
-}
+namespace Ui { class LoginForm; }
 
 class LoginForm : public QWidget
 {
@@ -14,6 +12,9 @@ class LoginForm : public QWidget
 public:
     explicit LoginForm(QWidget *parent = nullptr);
     ~LoginForm();
+
+private slots:
+    void on_pushButton_auth_clicked();
 
 private:
     Ui::LoginForm *ui;

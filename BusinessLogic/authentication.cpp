@@ -13,6 +13,11 @@ bool Authentication::createConnect(QString login, QString password)
 {
 
     if (QSqlDatabase::contains(CONNECTION_NAME)) {
+
+        QSqlDatabase oldDb = QSqlDatabase::database(CONNECTION_NAME);
+        if (oldDb.isOpen()) {
+            oldDb.close();
+        }
         QSqlDatabase::removeDatabase(CONNECTION_NAME);
     }
 
