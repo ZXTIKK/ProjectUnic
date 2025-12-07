@@ -8,14 +8,12 @@ set(CMAKE_AUTOUIC ON)
 set(CMAKE_AUTOMOC ON)
 set(CMAKE_AUTORCC ON)
 set(CMAKE_AUTOUIC_SEARCH_PATHS UIfiles)
-#set(CMAKE_AUTOUIC_SEARCH_PATHS ExternalLibs/QXlsx)
+
 
 # Устанавливаем стандарт C++17
 set(CMAKE_CXX_STANDARD 17)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 
-# Интегрируем QXlsx
-add_subdirectory(ExternalLibs/QXlsx)
 
 # === Определяем версию Qt ===
 find_package(QT NAMES Qt6 Qt5 REQUIRED COMPONENTS Core Widgets)
@@ -55,7 +53,6 @@ if(${QT_VERSION_MAJOR} GREATER_EQUAL 6)
     target_link_libraries(ProjectUnic PRIVATE
         Qt6::Widgets
         Qt6::Sql
-        QXlsx
     )
 
 else()
@@ -69,7 +66,6 @@ else()
     target_link_libraries(ProjectUnic PRIVATE
         Qt5::Widgets
         Qt5::Sql
-        QXlsx
     )
 endif()
 

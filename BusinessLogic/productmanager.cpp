@@ -22,7 +22,7 @@ QSqlDatabase ProductManager::openConnection()
     db.setPassword(TECH_PASS);
 
     if (!db.open()) {
-        qCritical() << "❌ Ошибка подключения к БД:" << db.lastError().text();
+        qCritical() << "Error conect of bd:" << db.lastError().text();
     }
     return db;
 }
@@ -83,13 +83,13 @@ bool ProductManager::insertProduct(
     query.addBindValue(recipient_enc);
 
     if (!query.exec()) {
-        qCritical() << "❌ Error INSERT:" << query.lastError().text();
+        qCritical() << "Error INSERT:" << query.lastError().text();
         db.close();
         return false;
     }
 
     db.close();
-    qDebug() << "✅ Product added (encrypted):" << name;
+    qDebug() << "Product added (encrypted):" << name;
     return true;
 }
 QStringList ProductManager::getAllProducts()
@@ -104,7 +104,7 @@ QStringList ProductManager::getAllProducts()
     if (!query.exec("SELECT id, \"product name\", quantity, price, \"delivery date\", "
                     "supplier, \"shipping date\", recipient FROM products"))
     {
-        qCritical() << "❌ Ошибка SELECT:" << query.lastError().text();
+        qCritical() << "Error SELECT:" << query.lastError().text();
         db.close();
         return resultList;
     }
@@ -126,7 +126,7 @@ QStringList ProductManager::getAllProducts()
     }
 
     db.close();
-    qDebug() << "✅ Получено" << resultList.size() << "записей (дешифровано).";
+    qDebug() << "Получено" << resultList.size() << "записей (дешифровано).";
     return resultList;
 }
 bool ProductManager::updateProduct(
