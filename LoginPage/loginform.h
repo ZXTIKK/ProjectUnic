@@ -2,6 +2,7 @@
 #define LOGINFORM_H
 
 #include <QWidget>
+#include <QKeyEvent>
 
 namespace Ui { class LoginForm; }
 
@@ -18,6 +19,12 @@ private slots:
 
 private:
     Ui::LoginForm *ui;
+
+signals:
+    void loginSuccessful();
+
+private:
+    void keyPressEvent(QKeyEvent *event) override;
 };
 
 #endif // LOGINFORM_H

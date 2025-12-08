@@ -5,6 +5,7 @@
 #include <QDebug>
 #include <QVariant>
 #include <QCryptographicHash>
+#include "authentication.h"
 
 const QString DB_HOST = "localhost";
 const int DB_PORT = 5432;
@@ -14,12 +15,7 @@ const QString TECH_PASS = "Zxc123!!!";
 
 QSqlDatabase ProductManager::openConnection()
 {
-    QSqlDatabase db = QSqlDatabase::addDatabase("QPSQL");
-    db.setHostName(DB_HOST);
-    db.setPort(DB_PORT);
-    db.setDatabaseName(DB_NAME);
-    db.setUserName(TECH_USER);
-    db.setPassword(TECH_PASS);
+    QSqlDatabase db = Authentication::getConnect();
 
     if (!db.open()) {
         qCritical() << "Error conect of bd:" << db.lastError().text();

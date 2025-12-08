@@ -6,6 +6,7 @@
 #include <QPushButton>
 #include <QLineEdit>
 #include <QLabel>
+#include <QStackedWidget>
 
 class MainWindow : public QMainWindow
 {
@@ -14,6 +15,13 @@ class MainWindow : public QMainWindow
 public:
     MainWindow(QWidget *parent = nullptr);
     ~MainWindow();
+private slots:
+    void switchToBasicForm();
+
+private:
+    QStackedWidget *stackedWidget; // <-- Сделайте его членом класса
+    int basicIndex;
+    int loginIndex;
 
 };
 

@@ -2,6 +2,8 @@
 #include "ui_loginform.h"
 #include "../BusinessLogic/authentication.h"
 
+#include <QKeyEvent>
+
 LoginForm::LoginForm(QWidget *parent)
     : QWidget(parent)
     , ui(new Ui::LoginForm)
@@ -12,6 +14,13 @@ LoginForm::LoginForm(QWidget *parent)
 LoginForm::~LoginForm()
 {
     delete ui;
+}
+
+void LoginForm::keyPressEvent(QKeyEvent *event){
+    if(event->key() == Qt::Key_Enter || event->key() == Qt::Key_Return)
+    {
+        on_pushButton_auth_clicked();
+    }
 }
 
 void LoginForm::on_pushButton_auth_clicked()
@@ -38,7 +47,9 @@ void LoginForm::on_pushButton_auth_clicked()
     if (Authentication::authentication(login, password))
     {
         ui->label_error->clear();
+        ui->lineEdit_login->clear();
         ui->lineEdit_password->clear();
+        emit loginSuccessful();
     }
     else
     {
