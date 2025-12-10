@@ -387,3 +387,130 @@ bool ProductManager::addSupply(
     qDebug() << "Supply added. Product ID" << product_id << " quantity changed:" << current_quantity << "->" << new_quantity;
     return true;
 }
+
+QStringList ProductManager::findProduct(const QString& searchTerm)
+{
+    QStringList resultList;
+
+    QSqlDatabase db = openConnection();
+    if (!db.isOpen()) return resultList;
+
+    QSqlQuery query(db);
+
+    bool isId = false;
+    qint64 id = searchTerm.toLongLong(&isId);
+
+    qDebug() << "Поиск: ID=" << id << ", isId=" << isId;
+
+    const QString selectQueryBase =
+        "SELECT p.id, p.product_name, p.quantity AS current_quantity, p.price, p.about, "
+        "s.shipment_date, s.quantity AS shipment_quantity, s.recipient_name, "
+        "su.supplies_date, su.quantity AS supplies_quantity, su.supplier_name "
+        "FROM products p "
+        "LEFT JOIN shipment s ON p.id = s.id_product "
+        "LEFT JOIN supplies su ON p.id = su.id_product ";
+
+    QByteArray searchTerm_enc = encryptData(searchTerm.toUtf8());
+    bool searchExecuted = false;
+
+    if (isId && id > 0) {
+        query.prepare(selectQueryBase + " WHERE p.id = ?");
+        query.addBindValue(id);
+
+        if (query.exec()) {
+            if (query.size() > 0) {
+                searchExecuted = true;
+            }
+        } else {
+            qCritical() << "Error SELECT by ID:" << query.lastError().text();
+            return resultList;
+        }
+    }
+
+    if (!searchExecuted) {
+        query.prepare(selectQueryBase + " WHERE p.product_name = ?");
+        query.addBindValue(searchTerm_enc);
+
+        if (query.exec()) {
+            if (query.size() > 0) {
+                searchExecuted = true;
+            }
+        } else {
+            qCritical() << "Error SELECT by Encrypted Name:" << query.lastError().text();
+            return resultList;
+        }
+    }
+
+    if (!searchExecuted) {
+        query.prepare(selectQueryBase + " WHERE su.supplier_name = ?");
+        query.addBindValue(searchTerm_enc);
+
+        if (!query.exec()) {
+            qCritical() << "Error SELECT by Encrypted Supplier Name:" << query.lastError().text();
+            return resultList;
+        }
+
+        searchExecuted = true;
+    }
+
+    QSqlQuery finalQuery(db);
+    bool finalExecuted = false;
+
+    if (isId && id > 0) {
+        finalQuery.prepare(selectQueryBase + " WHERE p.id = ?");
+        finalQuery.addBindValue(id);
+        if (finalQuery.exec() && finalQuery.size() > 0) {
+            finalExecuted = true;
+        }
+    }
+
+    if (!finalExecuted) {
+        finalQuery.prepare(selectQueryBase + " WHERE p.product_name = ?");
+        finalQuery.addBindValue(searchTerm_enc);
+        if (finalQuery.exec() && finalQuery.size() > 0) {
+            finalExecuted = true;
+        }
+    }
+
+    if (!finalExecuted) {
+        finalQuery.prepare(selectQueryBase + " WHERE su.supplier_name = ?");
+        finalQuery.addBindValue(searchTerm_enc);
+        if (finalQuery.exec()) {
+
+            finalExecuted = true;
+        } else {
+            qCritical() << "Error SELECT by Encrypted Supplier Name:" << finalQuery.lastError().text();
+            return resultList;
+        }
+    }
+
+    QSqlQuery* processQuery = &finalQuery;
+
+    if (!finalExecuted) {
+        qDebug() << "Поиск '" << searchTerm << "' завершен. Не найдено совпадений.";
+        return resultList;
+    }
+
+    while (processQuery->next()) {
+        QString row;
+        row += QString("ID: %1 | ").arg(processQuery->value(0).toLongLong());
+
+        for (int i = 1; i < 11; ++i) {
+            QVariant value = processQuery->value(i);
+            QString decryptedString;
+
+            if (value.isNull() || value.toString().isEmpty()) {
+                decryptedString = "N/A";
+            } else {
+                QByteArray encryptedData = value.toByteArray();
+                QByteArray decryptedBytes = decryptData(encryptedData);
+                decryptedString = QString::fromUtf8(decryptedBytes);
+            }
+            row += QString("%1 | ").arg(decryptedString);
+        }
+        resultList.append(row.trimmed());
+    }
+
+    qDebug() << "Поиск '" << searchTerm << "' завершен. Найдено" << resultList.size() << "записей.";
+    return resultList;
+}

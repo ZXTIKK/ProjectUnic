@@ -48,6 +48,8 @@ public:
         const QString& supplier
         );
 
+    static QStringList findProduct(const QString& searchTerm);
+
 private:
     static QSqlDatabase openConnection();
 };
