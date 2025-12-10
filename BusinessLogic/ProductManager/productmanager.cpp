@@ -29,45 +29,73 @@ QByteArray ProductManager::decryptData(const QByteArray& encryptedData)
 
 bool ProductManager::insertProduct(
     const QString& name,
-    int quantity,
     double price,
-    const QDate& delivery_date,
     const QString& supplier,
-    const QDate& shipping_date,
-    const QString& recipient,
-    const QString& about)
+    const QString& about,
+    int supplies_quantity,
+    const QDate& supplies_date)
 {
-    QByteArray name_enc = encryptData(name.toUtf8());
-    QByteArray quantity_enc = encryptData(QByteArray::number(quantity));
-    QByteArray price_enc = encryptData(QByteArray::number(price, 'f', 2));
-    QByteArray delivery_date_enc = encryptData(delivery_date.toString("yyyy-MM-dd").toUtf8());
-    QByteArray supplier_enc = encryptData(supplier.toUtf8());
-    QByteArray shipping_date_enc = encryptData(shipping_date.toString("yyyy-MM-dd").toUtf8());
-    QByteArray recipient_enc = encryptData(recipient.toUtf8());
-    QByteArray about_enc = encryptData(about.toUtf8());
-
     QSqlDatabase db = openConnection();
     if (!db.isOpen()) return false;
 
+    if (!db.transaction()) {
+        qCritical() << "Failed to start transaction for product insert:" << db.lastError().text();
+        return false;
+    }
+
+    QByteArray name_enc = encryptData(name.toUtf8());
+    QByteArray initial_quantity_enc = encryptData(QByteArray::number(supplies_quantity));
+    QByteArray price_enc = encryptData(QByteArray::number(price, 'f', 2));
+    QByteArray about_enc = encryptData(about.toUtf8());
+
     QSqlQuery query(db);
     query.prepare("INSERT INTO products ("
-                    "product_name, quantity, price, delivery_date, supplier, shipping_date, recipient, about"
-                    ") VALUES (?, ?, ?, ?, ?, ?, ?, ?)");
+                  "product_name, quantity, price, about"
+                  ") VALUES (?, ?, ?, ?) RETURNING id");
 
     query.addBindValue(name_enc);
-    query.addBindValue(quantity_enc);
+    query.addBindValue(initial_quantity_enc);
     query.addBindValue(price_enc);
-    query.addBindValue(delivery_date_enc);
-    query.addBindValue(supplier_enc);
-    query.addBindValue(shipping_date_enc);
-    query.addBindValue(recipient_enc);
     query.addBindValue(about_enc);
 
     if (!query.exec()) {
-        qCritical() << "Error INSERT:" << query.lastError().text();
+        qCritical() << "Error INSERT into products:" << query.lastError().text();
+        db.rollback();
         return false;
     }
-    qDebug() << "Product added (Base64 encoded):" << name;
+
+    if (!query.next()) {
+        qCritical() << "Error: Could not retrieve last inserted product ID.";
+        db.rollback();
+        return false;
+    }
+    qint64 product_id = query.value(0).toLongLong();
+
+    QByteArray supplies_quantity_enc = encryptData(QByteArray::number(supplies_quantity));
+    QByteArray supplies_date_enc = encryptData(supplies_date.toString("yyyy-MM-dd").toUtf8());
+    QByteArray supplier_enc = encryptData(supplier.toUtf8());
+
+    QSqlQuery supplies_query(db);
+    supplies_query.prepare("INSERT INTO supplies (supplies_date, quantity, id_product, supplier_name) "
+                           "VALUES (?, ?, ?, ?)");
+
+    supplies_query.addBindValue(supplies_date_enc);
+    supplies_query.addBindValue(supplies_quantity_enc);
+    supplies_query.addBindValue(product_id);
+    supplies_query.addBindValue(supplier_enc);
+
+    if (!supplies_query.exec()) {
+        qCritical() << "Error INSERT into supplies (product ID:" << product_id << "):" << supplies_query.lastError().text();
+        db.rollback();
+        return false;
+    }
+
+    if (!db.commit()) {
+        qCritical() << "Failed to commit transaction for product insert:" << db.lastError().text();
+        return false;
+    }
+
+    qDebug() << "Product and initial Supply added with ID:" << product_id;
     return true;
 }
 
@@ -79,75 +107,72 @@ QStringList ProductManager::getAllProducts()
     if (!db.isOpen()) return resultList;
 
     QSqlQuery query(db);
-    if (!query.exec("SELECT id, product_name, quantity, price, delivery_date, supplier, shipping_date, recipient, about FROM products"))
+
+    const QString selectQuery =
+        "SELECT p.id, p.product_name, p.quantity AS current_quantity, p.price, p.about, "
+        "s.shipment_date, s.quantity AS shipment_quantity, s.recipient_name, "
+        "su.supplies_date, su.quantity AS supplies_quantity, su.supplier_name "
+        "FROM products p "
+        "LEFT JOIN shipment s ON p.id = s.id_product "
+        "LEFT JOIN supplies su ON p.id = su.id_product";
+
+
+    if (!query.exec(selectQuery))
     {
-        qCritical() << "Error SELECT:" << query.lastError().text();
+        qCritical() << "Error SELECT with JOINS:" << query.lastError().text();
         return resultList;
     }
 
     while (query.next()) {
         QString row;
-
         row += QString("ID: %1 | ").arg(query.value(0).toLongLong());
 
-        for (int i = 1; i < 9; ++i) {
-            QByteArray encryptedData = query.value(i).toByteArray();
-            QByteArray decryptedBytes = decryptData(encryptedData);
+        for (int i = 1; i < 11; ++i) {
+            QVariant value = query.value(i);
+            QString decryptedString;
 
-            QString decryptedString = QString::fromUtf8(decryptedBytes);
-
+            if (value.isNull() || value.toString().isEmpty()) {
+                decryptedString = "N/A";
+            } else {
+                QByteArray encryptedData = value.toByteArray();
+                QByteArray decryptedBytes = decryptData(encryptedData);
+                decryptedString = QString::fromUtf8(decryptedBytes);
+            }
             row += QString("%1 | ").arg(decryptedString);
         }
         resultList.append(row.trimmed());
     }
 
-    qDebug() << "Получено" << resultList.size() << "записей (Base64 decoded).";
+    qDebug() << "Получено" << resultList.size() << "записей с полной информацией (Base64 decoded).";
     return resultList;
 }
 
 bool ProductManager::updateProduct(
     qint64 id,
     const QString& name,
-    int quantity,
     double price,
-    const QDate& delivery_date,
-    const QString& supplier,
-    const QDate& shipping_date,
-    const QString& recipient,
     const QString& about)
 {
-
-    QByteArray name_enc = encryptData(name.toUtf8());
-    QByteArray quantity_enc = encryptData(QByteArray::number(quantity));
-    QByteArray price_enc = encryptData(QByteArray::number(price, 'f', 2));
-    QByteArray delivery_date_enc = encryptData(delivery_date.toString("yyyy-MM-dd").toUtf8());
-    QByteArray supplier_enc = encryptData(supplier.toUtf8());
-    QByteArray shipping_date_enc = encryptData(shipping_date.toString("yyyy-MM-dd").toUtf8());
-    QByteArray recipient_enc = encryptData(recipient.toUtf8());
-    QByteArray about_enc = encryptData(about.toUtf8());
-
     QSqlDatabase db = openConnection();
     if (!db.isOpen()) return false;
 
-    QSqlQuery query(db);
-    query.prepare("UPDATE products SET "
-                  "product_name = ?, quantity = ?, price = ?, delivery_date = ?, supplier = ?, shipping_date = ?, recipient = ?, about = ?"
-                  "product_name, quantity, price, delivery_date, supplier, shipping_date, recipient, about"
-                  "WHERE id = ?");
+    QByteArray name_enc = encryptData(name.toUtf8());
+    QByteArray price_enc = encryptData(QByteArray::number(price, 'f', 2));
+    QByteArray about_enc = encryptData(about.toUtf8());
 
-    query.addBindValue(name_enc);
-    query.addBindValue(quantity_enc);
-    query.addBindValue(price_enc);
-    query.addBindValue(delivery_date_enc);
-    query.addBindValue(supplier_enc);
-    query.addBindValue(shipping_date_enc);
-    query.addBindValue(recipient_enc);
-    query.addBindValue(about_enc);
+    QSqlQuery product_query(db);
 
-    query.addBindValue(id);
+    product_query.prepare("UPDATE products SET "
+                          "product_name = ?, price = ?, about = ? "
+                          "WHERE id = ?");
 
-    if (!query.exec()) {
-        qCritical() << "Error UPDATE:" << query.lastError().text();
+    product_query.addBindValue(name_enc);
+    product_query.addBindValue(price_enc);
+    product_query.addBindValue(about_enc);
+    product_query.addBindValue(id);
+
+    if (!product_query.exec()) {
+        qCritical() << "Error UPDATE products (ID:" << id << "):" << product_query.lastError().text();
         return false;
     }
 
@@ -160,16 +185,205 @@ bool ProductManager::deleteProduct(qint64 id)
     QSqlDatabase db = openConnection();
     if (!db.isOpen()) return false;
 
-    QSqlQuery query(db);
-    query.prepare("DELETE FROM products WHERE id = ?");
-
-    query.addBindValue(id);
-
-    if (!query.exec()) {
-        qCritical() << "Error DELETE:" << query.lastError().text();
+    if (!db.transaction()) {
+        qCritical() << "Failed to start transaction for delete:" << db.lastError().text();
         return false;
     }
 
-    qDebug() << "Product ID" << id << " deleted.";
+    QSqlQuery shipment_query(db);
+    shipment_query.prepare("DELETE FROM shipment WHERE id_product = ?");
+    shipment_query.addBindValue(id);
+    if (!shipment_query.exec()) {
+        qCritical() << "Error DELETE from shipment (ID:" << id << "):" << shipment_query.lastError().text();
+        db.rollback();
+        return false;
+    }
+
+    QSqlQuery supplies_query(db);
+    supplies_query.prepare("DELETE FROM supplies WHERE id_product = ?");
+    supplies_query.addBindValue(id);
+    if (!supplies_query.exec()) {
+        qCritical() << "Error DELETE from supplies (ID:" << id << "):" << supplies_query.lastError().text();
+        db.rollback();
+        return false;
+    }
+
+    QSqlQuery product_query(db);
+    product_query.prepare("DELETE FROM products WHERE id = ?");
+    product_query.addBindValue(id);
+    if (!product_query.exec()) {
+        qCritical() << "Error DELETE from products (ID:" << id << "):" << product_query.lastError().text();
+        db.rollback();
+        return false;
+    }
+
+    if (!db.commit()) {
+        qCritical() << "Failed to commit transaction for delete:" << db.lastError().text();
+        return false;
+    }
+
+    qDebug() << "Product and related records ID" << id << " deleted.";
+    return true;
+}
+
+bool ProductManager::addShipment(
+    qint64 product_id,
+    int shipment_quantity,
+    const QDate& shipment_date,
+    const QString& recipient)
+{
+    QSqlDatabase db = openConnection();
+    if (!db.isOpen()) return false;
+
+    if (!db.transaction()) {
+        qCritical() << "Failed to start transaction for shipment:" << db.lastError().text();
+        return false;
+    }
+
+    QByteArray shipment_quantity_enc = encryptData(QByteArray::number(shipment_quantity));
+    QByteArray shipment_date_enc = encryptData(shipment_date.toString("yyyy-MM-dd").toUtf8());
+    QByteArray recipient_enc = encryptData(recipient.toUtf8());
+
+    QSqlQuery shipment_query(db);
+    shipment_query.prepare("INSERT INTO shipment (shipment_date, quantity, id_product, recipient_name) "
+                           "VALUES (?, ?, ?, ?)");
+
+    shipment_query.addBindValue(shipment_date_enc);
+    shipment_query.addBindValue(shipment_quantity_enc);
+    shipment_query.addBindValue(product_id);
+    shipment_query.addBindValue(recipient_enc);
+
+    if (!shipment_query.exec()) {
+        qCritical() << "Error INSERT into shipment (ID:" << product_id << "):" << shipment_query.lastError().text();
+        db.rollback();
+        return false;
+    }
+
+    QSqlQuery select_query(db);
+    select_query.prepare("SELECT quantity FROM products WHERE id = ?");
+    select_query.addBindValue(product_id);
+
+    if (!select_query.exec() || !select_query.next()) {
+        qCritical() << "Error SELECT quantity for update (ID:" << product_id << "):" << select_query.lastError().text();
+        db.rollback();
+        return false;
+    }
+
+    QByteArray current_quantity_enc = select_query.value(0).toByteArray();
+    QByteArray current_quantity_bytes = decryptData(current_quantity_enc);
+
+    bool ok;
+    int current_quantity = current_quantity_bytes.toInt(&ok);
+    if (!ok) {
+        qCritical() << "Error decoding current quantity for product ID:" << product_id;
+        db.rollback();
+        return false;
+    }
+
+    int new_quantity = current_quantity - shipment_quantity;
+
+    if (new_quantity < 0) {
+        qWarning() << "Shipment failed: Not enough stock for product ID:" << product_id;
+        db.rollback();
+        return false;
+    }
+
+    QByteArray new_quantity_enc = encryptData(QByteArray::number(new_quantity));
+
+    QSqlQuery update_query(db);
+    update_query.prepare("UPDATE products SET quantity = ? WHERE id = ?");
+    update_query.addBindValue(new_quantity_enc);
+    update_query.addBindValue(product_id);
+
+    if (!update_query.exec()) {
+        qCritical() << "Error UPDATE products quantity (ID:" << product_id << "):" << update_query.lastError().text();
+        db.rollback();
+        return false;
+    }
+
+    if (!db.commit()) {
+        qCritical() << "Failed to commit transaction for shipment:" << db.lastError().text();
+        return false;
+    }
+
+    qDebug() << "Shipment added. Product ID" << product_id << " quantity changed:" << current_quantity << "->" << new_quantity;
+    return true;
+}
+
+bool ProductManager::addSupply(
+    qint64 product_id,
+    int supplies_quantity,
+    const QDate& supplies_date,
+    const QString& supplier)
+{
+    QSqlDatabase db = openConnection();
+    if (!db.isOpen()) return false;
+
+    if (!db.transaction()) {
+        qCritical() << "Failed to start transaction for supply:" << db.lastError().text();
+        return false;
+    }
+
+    QByteArray supplies_quantity_enc = encryptData(QByteArray::number(supplies_quantity));
+    QByteArray supplies_date_enc = encryptData(supplies_date.toString("yyyy-MM-dd").toUtf8());
+    QByteArray supplier_enc = encryptData(supplier.toUtf8());
+
+    QSqlQuery supplies_query(db);
+    supplies_query.prepare("INSERT INTO supplies (supplies_date, quantity, id_product, supplier_name) "
+                           "VALUES (?, ?, ?, ?)");
+
+    supplies_query.addBindValue(supplies_date_enc);
+    supplies_query.addBindValue(supplies_quantity_enc);
+    supplies_query.addBindValue(product_id);
+    supplies_query.addBindValue(supplier_enc);
+
+    if (!supplies_query.exec()) {
+        qCritical() << "Error INSERT into supplies (ID:" << product_id << "):" << supplies_query.lastError().text();
+        db.rollback();
+        return false;
+    }
+
+    QSqlQuery select_query(db);
+    select_query.prepare("SELECT quantity FROM products WHERE id = ?");
+    select_query.addBindValue(product_id);
+
+    if (!select_query.exec() || !select_query.next()) {
+        qCritical() << "Error SELECT quantity for update (ID:" << product_id << "):" << select_query.lastError().text();
+        db.rollback();
+        return false;
+    }
+
+    QByteArray current_quantity_enc = select_query.value(0).toByteArray();
+    QByteArray current_quantity_bytes = decryptData(current_quantity_enc);
+
+    bool ok;
+    int current_quantity = current_quantity_bytes.toInt(&ok);
+    if (!ok) {
+        qCritical() << "Error decoding current quantity for product ID:" << product_id;
+        db.rollback();
+        return false;
+    }
+
+    int new_quantity = current_quantity + supplies_quantity;
+
+    QByteArray new_quantity_enc = encryptData(QByteArray::number(new_quantity));
+
+    QSqlQuery update_query(db);
+    update_query.prepare("UPDATE products SET quantity = ? WHERE id = ?");
+    update_query.addBindValue(new_quantity_enc);
+    update_query.addBindValue(product_id);
+
+    if (!update_query.exec()) {
+        qCritical() << "Error UPDATE products quantity (ID:" << product_id << "):" << update_query.lastError().text();
+        db.rollback();
+        return false;
+    }
+
+    if (!db.commit()) {
+        qCritical() << "Failed to commit transaction for supply:" << db.lastError().text();
+        return false;
+    }
+
+    qDebug() << "Supply added. Product ID" << product_id << " quantity changed:" << current_quantity << "->" << new_quantity;
     return true;
 }

@@ -39,7 +39,7 @@ void BasicForm::updateDate()
         QLabel *labelNotFound = new QLabel(ui->scrollArea);
         labelNotFound->setText("Не найдены товары");
     }else{
-        delete lableNotFound;
+        //delete lableNotFound;
     }
     for(int i = 0; i < products.length(); i++){
         qDebug() << products[i];

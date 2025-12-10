@@ -7,6 +7,7 @@
 #include <QSpinBox>
 #include <QDoubleSpinBox>
 #include <QToolTip>
+#include <QDebug>
 
 AddForm::AddForm(QWidget *parent)
     : QWidget(parent)
@@ -14,7 +15,6 @@ AddForm::AddForm(QWidget *parent)
 {
     ui->setupUi(this);
     ui->dateEdit_dateIn->setDate(QDate::currentDate());
-    ui->dateEdit_dateOut->setDate(QDate::currentDate());
 }
 
 AddForm::~AddForm()
@@ -40,16 +40,13 @@ void AddForm:: on_pushButton_Cancel_clicked()
 {
     ui->lineEdit_name->clear();
     ui->lineEdit_supplier->clear();
-    ui->lineEdit_recipient->clear();
     ui->textEdit_about->clear();
     ui->doubleSpinBox_price->clear();
     ui->spinBox_count->clear();
     ui->dateEdit_dateIn->setDate(QDate::currentDate());
-    ui->dateEdit_dateOut->setDate(QDate::currentDate());
 
     ui->lineEdit_name->setStyleSheet("");
     ui->lineEdit_supplier->setStyleSheet("");
-    ui->lineEdit_recipient->setStyleSheet("");
     ui->textEdit_about->setStyleSheet("");
     ui->doubleSpinBox_price->setStyleSheet("");
     ui->spinBox_count->setStyleSheet("");
@@ -62,12 +59,15 @@ void AddForm:: on_pushButton_Cancel_clicked()
 void AddForm::on_pushButton_Add_clicked(){
     QString name = ui->lineEdit_name->text();
     QString supplier = ui->lineEdit_supplier->text();
-    QString recipient = ui->lineEdit_recipient->text();
+
     QString about = ui->textEdit_about->toPlainText();
     double price = ui->doubleSpinBox_price->value();
-    int count = ui->spinBox_count->value();
-    QDate dateIn = ui->dateEdit_dateIn->date();
-    QDate dateOut = ui->dateEdit_dateOut->date();
+
+    int supplies_quantity = ui->spinBox_count->value();
+    QDate supplies_date = ui->dateEdit_dateIn->date();
+
+    QDate created_at = QDate::currentDate();
+
 
     bool hasErrors = false;
 
@@ -85,13 +85,6 @@ void AddForm::on_pushButton_Add_clicked(){
         ui->lineEdit_supplier->setStyleSheet("");
     }
 
-    if(recipient.trimmed().isEmpty()){
-        ui->lineEdit_recipient->setStyleSheet("border:1px solid red; border-radius:4px;");
-        hasErrors = true;
-    }else{
-        ui->lineEdit_recipient->setStyleSheet("");
-    }
-
     if(about.trimmed().isEmpty()){
         ui->textEdit_about->setStyleSheet("border:1px solid red; border-radius:4px;");
         hasErrors = true;
@@ -99,7 +92,7 @@ void AddForm::on_pushButton_Add_clicked(){
         ui->textEdit_about->setStyleSheet("");
     }
 
-    if (count <= 0) {
+    if (supplies_quantity <= 0) {
         ui->spinBox_count->setToolTip("Количество должно быть больше нуля!");
 
         QToolTip::showText(ui->spinBox_count->mapToGlobal(QPoint(0, ui->spinBox_count->height())),
@@ -128,24 +121,30 @@ void AddForm::on_pushButton_Add_clicked(){
         return;
     }
 
-    qDebug() << "yesss!!!";
+    qDebug() << "Attempting to insert product with initial supply...";
 
-    if(ProductManager::insertProduct(name,count,price,dateIn,supplier,dateOut,recipient,about)){
+    if(ProductManager::insertProduct(
+            name,
+            price,
+            supplier,
+            about,
+            supplies_quantity,
+            supplies_date))
+    {
         ui->lineEdit_name->clear();
         ui->lineEdit_supplier->clear();
-        ui->lineEdit_recipient->clear();
         ui->textEdit_about->clear();
         ui->doubleSpinBox_price->clear();
         ui->spinBox_count->clear();
         ui->dateEdit_dateIn->setDate(QDate::currentDate());
-        ui->dateEdit_dateOut->setDate(QDate::currentDate());
+
 
         ui->lineEdit_name->setStyleSheet("");
         ui->lineEdit_supplier->setStyleSheet("");
-        ui->lineEdit_recipient->setStyleSheet("");
         ui->textEdit_about->setStyleSheet("");
         ui->doubleSpinBox_price->setStyleSheet("");
         ui->spinBox_count->setStyleSheet("");
-        ui->spinBox_count->setStyleSheet("");
+    } else {
+        qCritical() << "Failed to insert product and initial supply.";
     }
 }

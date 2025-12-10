@@ -16,13 +16,11 @@ public:
 
     static bool insertProduct(
         const QString& name,
-        int quantity,
         double price,
-        const QDate& delivery_date,
         const QString& supplier,
-        const QDate& shipping_date,
-        const QString& recipient,
-        const QString& about
+        const QString& about,
+        int supplies_quantity,
+        const QDate& supplies_date
         );
 
     static QStringList getAllProducts();
@@ -30,16 +28,25 @@ public:
     static bool updateProduct(
         qint64 id,
         const QString& name,
-        int quantity,
         double price,
-        const QDate& delivery_date,
-        const QString& supplier,
-        const QDate& shipping_date,
-        const QString& recipient,
         const QString& about
         );
 
     static bool deleteProduct(qint64 id);
+
+    static bool addShipment(
+        qint64 product_id,
+        int shipment_quantity,
+        const QDate& shipment_date,
+        const QString& recipient
+        );
+
+    static bool addSupply(
+        qint64 product_id,
+        int supplies_quantity,
+        const QDate& supplies_date,
+        const QString& supplier
+        );
 
 private:
     static QSqlDatabase openConnection();
