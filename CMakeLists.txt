@@ -28,8 +28,10 @@ find_package(Qt${QT_VERSION_MAJOR} REQUIRED COMPONENTS Sql)
 # === Список исходников ===
 set(PROJECT_SOURCES
     main.cpp
-    BusinessLogic/authentication.cpp
-    BusinessLogic/authentication.h
+    BusinessLogic/ProductManager/productmanager.cpp
+    BusinessLogic/ProductManager/productmanager.h
+    BusinessLogic/Authentication/authentication.cpp
+    BusinessLogic/Authentication/authentication.h
     MainWindow/mainwindow.cpp
     MainWindow/mainwindow.h
     UIfiles/mainwindow.ui
@@ -46,7 +48,8 @@ if(${QT_VERSION_MAJOR} GREATER_EQUAL 6)
     qt_add_executable(ProjectUnic
         MANUAL_FINALIZATION
         ${PROJECT_SOURCES}
-        BusinessLogic/productmanager.h BusinessLogic/productmanager.cpp
+        BusinessLogic/ProductManager/productmanager.h BusinessLogic/ProductManager/productmanager.cpp
+        AddPage/addform.h AddPage/addform.cpp UIfiles/addform.ui
     )
 
     # Линкуем нужные модули ПОСЛЕ создания таргета

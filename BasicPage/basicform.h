@@ -17,6 +17,13 @@ public:
 
 private:
     Ui::BasicForm *ui;
+
+private slots:
+    void on_pushButton_add_clicked();
+    void updateDate();
+
+signals:
+    void PageAdd();
 };
 
 #endif // BASICFORM_H

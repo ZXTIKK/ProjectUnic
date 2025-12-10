@@ -4,6 +4,7 @@
 #include <QSqlError>
 #include <QDebug>
 #include <QString>
+#include <QCryptographicHash>
 
 
 const QString Authentication::CONNECTION_NAME = "Connection";
@@ -64,3 +65,4 @@ bool Authentication::authentication(QString login, QString password)
     qDebug() << "authentication: Попытка аутентификации";
     return createConnect(login, password);
 }
+

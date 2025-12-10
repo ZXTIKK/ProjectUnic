@@ -10,7 +10,11 @@
 
 #include "../LoginPage/loginform.h"
 #include "../BasicPage/basicform.h"
+#include "../AddPage/addform.h"
 
+LoginForm* MainWindow::loginForm = nullptr;
+BasicForm* MainWindow::basicForm = nullptr;
+AddForm* MainWindow::addForm = nullptr;
 
 MainWindow::MainWindow(QWidget *parent)
     : QMainWindow(parent)
@@ -18,17 +22,23 @@ MainWindow::MainWindow(QWidget *parent)
     stackedWidget = new QStackedWidget(this);
     setCentralWidget(stackedWidget);
 
-    LoginForm *loginForm = new LoginForm();
-    BasicForm *basicForm = new BasicForm();
+    loginForm = new LoginForm();
+    basicForm = new BasicForm();
+    addForm = new AddForm();
 
-    int loginIndex = stackedWidget->addWidget(loginForm);
+    loginIndex = stackedWidget->addWidget(loginForm);
     basicIndex = stackedWidget->addWidget(basicForm);
+    addIndex = stackedWidget->addWidget(addForm);
 
     stackedWidget->setCurrentIndex(loginIndex);
     setWindowTitle("Авторизация");
 
     connect(loginForm, &LoginForm::loginSuccessful,
             this, &MainWindow::switchToBasicForm);
+    connect(basicForm, &BasicForm::PageAdd,
+            this, &MainWindow::switchToAddForm);
+    connect(addForm, &AddForm::Cancel,
+            this, &MainWindow::cancelFromAdd);
 
 }
 
@@ -40,5 +50,26 @@ void MainWindow::switchToBasicForm()
     setWindowTitle("Товары");
 }
 
+void MainWindow::switchToAddForm()
+{
+    stackedWidget->setCurrentIndex(addIndex);
+    setWindowTitle("Добавить товар");
+}
 
+void MainWindow::cancelFromAdd()
+{
+    stackedWidget->setCurrentIndex(basicIndex);
+    setWindowTitle("Товары");
+}
 
+LoginForm* MainWindow::getLoginForm(){
+    return MainWindow::loginForm;
+}
+
+BasicForm* MainWindow::getBasicForm(){
+    return MainWindow::basicForm;
+}
+
+AddForm* MainWindow::getAddForm(){
+    return MainWindow::addForm;
+}

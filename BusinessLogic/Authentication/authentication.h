@@ -9,13 +9,11 @@ class Authentication
 private:
     static const QString CONNECTION_NAME;
     static bool userConnect;
-
     static bool createConnect(QString login, QString password);
 
 public:
     static bool authentication(QString login, QString password);
     static bool userAuth();
-
     static QSqlDatabase getConnect();
 };
 

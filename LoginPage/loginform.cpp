@@ -1,6 +1,6 @@
 #include "loginform.h"
 #include "ui_loginform.h"
-#include "../BusinessLogic/authentication.h"
+#include "../BusinessLogic/Authentication/authentication.h"
 
 #include <QKeyEvent>
 

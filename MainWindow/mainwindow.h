@@ -8,6 +8,10 @@
 #include <QLabel>
 #include <QStackedWidget>
 
+#include "../LoginPage/loginform.h"
+#include "../BasicPage/basicform.h"
+#include "../AddPage/addform.h"
+
 class MainWindow : public QMainWindow
 {
     Q_OBJECT
@@ -15,13 +19,24 @@ class MainWindow : public QMainWindow
 public:
     MainWindow(QWidget *parent = nullptr);
     ~MainWindow();
+    static LoginForm* getLoginForm();
+    static BasicForm* getBasicForm();
+    static AddForm* getAddForm();
+
 private slots:
     void switchToBasicForm();
+    void switchToAddForm();
+    void cancelFromAdd();
 
 private:
-    QStackedWidget *stackedWidget; // <-- Сделайте его членом класса
+    QStackedWidget *stackedWidget;
     int basicIndex;
     int loginIndex;
+    int addIndex;
+    static LoginForm *loginForm;
+    static BasicForm *basicForm;
+    static AddForm *addForm;
+
 
 };
 

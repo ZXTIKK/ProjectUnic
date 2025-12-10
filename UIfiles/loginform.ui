@@ -68,9 +68,9 @@
      <property name="font">
       <font>
        <family>Leelawadee UI</family>
-       <pointsize>12</pointsize>
+       <pointsize>14</pointsize>
        <italic>false</italic>
-       <bold>true</bold>
+       <bold>false</bold>
       </font>
      </property>
      <property name="cursor">
@@ -127,12 +127,13 @@
      <property name="maximumSize">
       <size>
        <width>250</width>
-       <height>26</height>
+       <height>100</height>
       </size>
      </property>
      <property name="font">
       <font>
        <family>Leelawadee UI</family>
+       <pointsize>11</pointsize>
       </font>
      </property>
      <property name="cursor">
@@ -170,12 +171,13 @@
      <property name="maximumSize">
       <size>
        <width>250</width>
-       <height>26</height>
+       <height>100</height>
       </size>
      </property>
      <property name="font">
       <font>
        <family>Leelawadee UI</family>
+       <pointsize>11</pointsize>
       </font>
      </property>
      <property name="styleSheet">
