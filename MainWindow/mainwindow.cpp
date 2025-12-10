@@ -7,6 +7,7 @@
 #include <QMessageBox>
 #include <QDebug>
 #include <QStackedWidget>
+#include <QFileDialog>
 
 #include "../LoginPage/loginform.h"
 #include "../BasicPage/basicform.h"

@@ -19,6 +19,8 @@ set(CMAKE_CXX_STANDARD_REQUIRED ON)
 find_package(QT NAMES Qt6 Qt5 REQUIRED COMPONENTS Core Widgets)
 set(QT_VERSION_MAJOR ${QT_VERSION_MAJOR})
 
+find_package(Qt6 REQUIRED COMPONENTS Core Widgets Sql Gui)
+
 # === Подключаем компоненты Qt ===
 find_package(Qt${QT_VERSION_MAJOR} REQUIRED COMPONENTS Core Widgets Sql)
 
@@ -50,6 +52,7 @@ if(${QT_VERSION_MAJOR} GREATER_EQUAL 6)
         ${PROJECT_SOURCES}
         BusinessLogic/ProductManager/productmanager.h BusinessLogic/ProductManager/productmanager.cpp
         AddPage/addform.h AddPage/addform.cpp UIfiles/addform.ui
+        BusinessLogic/OutputWord/outputword.h BusinessLogic/OutputWord/outputword.cpp
     )
 
     # Линкуем нужные модули ПОСЛЕ создания таргета
