@@ -21,9 +21,12 @@ BasicForm::BasicForm(QWidget *parent)
     ui->setupUi(this);
 
     LoginForm *loginForm = MainWindow::getLoginForm();
+    EditForm *editForm = MainWindow::getEditForm();
+    AddForm *addForm = MainWindow::getAddForm();
 
     connect(loginForm, &LoginForm::loginSuccessful,
             this, &BasicForm::updateDate);
+
 }
 
 BasicForm::~BasicForm()
@@ -50,6 +53,7 @@ void BasicForm::clearScrollArea()
 
 void BasicForm::updateDate()
 {
+    qDebug() << "update!";
     QStringList products = ProductManager::getAllProducts();
     addDataInTable(products);
 }
@@ -153,9 +157,7 @@ void BasicForm::addDataInTable(QStringList products){
 
         QHeaderView *header = table->horizontalHeader();
 
-        header->setSectionResizeMode(QHeaderView::Stretch);
-
-        header->setSectionResizeMode(5, QHeaderView::ResizeToContents);
+        header->setSectionResizeMode(QHeaderView::Interactive);
 
         header->setSectionResizeMode(0, QHeaderView::Stretch);
         header->setSectionResizeMode(1, QHeaderView::Stretch);
@@ -163,16 +165,20 @@ void BasicForm::addDataInTable(QStringList products){
         header->setSectionResizeMode(3, QHeaderView::Stretch);
         header->setSectionResizeMode(4, QHeaderView::Stretch);
 
+        header->setSectionResizeMode(5, QHeaderView::Fixed);
+
         table->setEditTriggers(QAbstractItemView::NoEditTriggers);
     }
 
     QTableWidget *table = m_tableProducts;
 
+    table->setColumnWidth(5, 360);
+
     table->clearContents();
     table->setRowCount(0);
 
     QSize minButtonSize(100, 30);
-    QSize minContainerSize(320, 0);
+    QSize minContainerSize(350, 0);
 
     for (int i = 0; i < products.length(); i++) {
         QStringList parts = products[i].split(" | ", Qt::SkipEmptyParts);
@@ -184,7 +190,10 @@ void BasicForm::addDataInTable(QStringList products){
 
         bool okID, okQty, okPrice;
 
-        qint64 id = parts[0].split(": ").last().toLongLong(&okID);
+        qint64 id = parts[0].contains(": ")
+                        ? parts[0].split(": ").last().toLongLong(&okID)
+                        : parts[0].toLongLong(&okID);
+
         QString name = parts[1].trimmed();
         int quantity = parts[2].trimmed().toInt(&okQty);
         double price = parts[3].trimmed().toDouble(&okPrice);
@@ -246,10 +255,14 @@ void BasicForm::addDataInTable(QStringList products){
 
         pLayout->setAlignment(Qt::AlignCenter);
         pLayout->setContentsMargins(0, 0, 0, 0);
+        pLayout->setSpacing(5);
 
         table->setCellWidget(row, 5, pWidget);
+
+        table->setRowHeight(row, minButtonSize.height());
+
+        table->resizeRowToContents(row);
     }
 
     table->show();
 }
-

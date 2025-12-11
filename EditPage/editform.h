@@ -22,7 +22,7 @@ private:
 private slots:
     void updateData(qint64 id);
     void on_pushButton_back_clicked();
-    void on_pushButton_conf_click();
+    void on_pushButton_conf_clicked();
 
 signals:
     void Cancel();

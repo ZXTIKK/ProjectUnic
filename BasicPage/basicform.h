@@ -25,9 +25,11 @@ private:
     void clearScrollArea();
     void addDataInTable(QStringList products);
 
+public slots:
+    void updateDate();
+
 private slots:
     void on_pushButton_add_clicked();
-    void updateDate();
     void on_detailsButton_clicked(qint64 id);
     void on_deleteButton_clicked(qint64 id);
     void on_editButton_clicked(qint64 id);

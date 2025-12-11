@@ -48,6 +48,10 @@ MainWindow::MainWindow(QWidget *parent)
             this, &MainWindow::switchToEditForm);
     connect(editForm, &EditForm::Cancel,
             this, &MainWindow::cancelFromEdit);
+    connect(addForm, &AddForm::Cancel,
+            basicForm, &BasicForm::updateDate);
+    connect(editForm, &EditForm::Cancel,
+            basicForm, &BasicForm::updateDate);
 
 }
 

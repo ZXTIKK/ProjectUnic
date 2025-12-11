@@ -49,7 +49,7 @@ void EditForm::on_pushButton_back_clicked()
     emit Cancel();
 }
 
-void EditForm::on_pushButton_conf_click()
+void EditForm::on_pushButton_conf_clicked()
 {
     qDebug() << "conf";
     QString name = ui->lineEdit_name->text();
