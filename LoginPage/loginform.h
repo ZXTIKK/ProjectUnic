@@ -16,12 +16,14 @@ public:
 
 private slots:
     void on_pushButton_auth_clicked();
+    void on_pushButton_settings_clicked();
 
 private:
     Ui::LoginForm *ui;
 
 signals:
     void loginSuccessful();
+    void settingsPage();
 
 private:
     void keyPressEvent(QKeyEvent *event) override;

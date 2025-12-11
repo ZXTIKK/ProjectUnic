@@ -35,10 +35,14 @@ private slots:
     void on_editButton_clicked(qint64 id);
     void on_pushButton_find_clicked();
     void on_pushButton_deleteFind_clicked();
+    void on_pushButton_supply_clicked();
+    void on_pushButton_ShipmentForm_clicked();
 
 signals:
     void PageAdd();
     void switchToEditForm(qint64 id);
+    void switchToAddSupplyForm();
+    void switchToAddShipmentForm();
 };
 
 #endif // BASICFORM_H

@@ -57,3 +57,8 @@ void LoginForm::on_pushButton_auth_clicked()
         ui->lineEdit_password->clear();
     }
 }
+
+void LoginForm::on_pushButton_settings_clicked()
+{
+    emit settingsPage();
+}

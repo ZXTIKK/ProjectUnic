@@ -6,6 +6,7 @@
 #include <QString>
 #include <QCryptographicHash>
 
+#include "../../Settings/settingsform.h"
 
 const QString Authentication::CONNECTION_NAME = "Connection";
 bool Authentication::userConnect = false;
@@ -24,8 +25,8 @@ bool Authentication::createConnect(QString login, QString password)
 
     QSqlDatabase db = QSqlDatabase::addDatabase("QPSQL", CONNECTION_NAME);
 
-    db.setHostName("localhost");
-    db.setPort(5432);
+    db.setHostName(SettingsForm::serverAddress());
+    db.setPort(SettingsForm::serverPort());
     db.setDatabaseName("myappdb");
 
     db.setUserName(login);

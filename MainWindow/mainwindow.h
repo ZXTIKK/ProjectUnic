@@ -12,6 +12,9 @@
 #include "../BasicPage/basicform.h"
 #include "../AddPage/addform.h"
 #include "../EditPage/editform.h"
+#include "../Settings/settingsform.h"
+#include "../AddSupplyPage/addsupplyform.h"
+#include "../AddShipmentPage/addshipmentform.h"
 
 class MainWindow : public QMainWindow
 {
@@ -24,6 +27,8 @@ public:
     static BasicForm* getBasicForm();
     static AddForm* getAddForm();
     static EditForm* getEditForm();
+    static SettingsForm* getSettingsForm();
+    static AddShipmentForm* getAddShipmentForm();
 
 private slots:
     void switchToBasicForm();
@@ -31,6 +36,10 @@ private slots:
     void cancelFromAdd();
     void switchToEditForm(qint64 id);
     void cancelFromEdit();
+    void switchToSettingsPage();
+    void switchToLoginPage();
+    void switchToAddSupplyForm();
+    void switchToAddShipmentForm();
 
 private:
     QStackedWidget *stackedWidget;
@@ -38,11 +47,16 @@ private:
     int loginIndex;
     int addIndex;
     int editIndex;
+    int settingsIndex;
+    int addSupplyIndex;
+    int addShipmentIndex;
     static LoginForm *loginForm;
     static BasicForm *basicForm;
     static AddForm *addForm;
     static EditForm *editForm;
-
+    static SettingsForm *settingsForm;
+    static AddSupplyForm *addSupplyForm;
+    static AddShipmentForm *addShipmentForm;
 };
 
 #endif // MAINWINDOW_H

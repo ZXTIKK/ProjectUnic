@@ -218,7 +218,7 @@
       </spacer>
      </item>
      <item>
-      <widget class="QPushButton" name="pushButton_4">
+      <widget class="QPushButton" name="pushButton_supply">
        <property name="minimumSize">
         <size>
          <width>150</width>
@@ -250,7 +250,7 @@
       </spacer>
      </item>
      <item>
-      <widget class="QPushButton" name="pushButton_5">
+      <widget class="QPushButton" name="pushButton_ShipmentForm">
        <property name="minimumSize">
         <size>
          <width>150</width>

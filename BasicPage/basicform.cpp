@@ -83,6 +83,16 @@ void BasicForm::on_editButton_clicked(qint64 id)
     emit switchToEditForm(id);
 }
 
+void BasicForm::on_pushButton_supply_clicked()
+{
+    emit switchToAddSupplyForm();
+
+}
+
+void BasicForm::on_pushButton_ShipmentForm_clicked()
+{
+    emit switchToAddShipmentForm();
+}
 
 void BasicForm::on_pushButton_find_clicked(){
     if(!ui->lineEdit_find->text().trimmed().isEmpty()){
@@ -174,11 +184,20 @@ void BasicForm::addDataInTable(QStringList products){
 
     table->setColumnWidth(5, 360);
 
+    // Удаляем старые данные
     table->clearContents();
     table->setRowCount(0);
 
     QSize minButtonSize(100, 30);
     QSize minContainerSize(350, 0);
+
+    // Создаем set для быстрого отслеживания уже добавленных артикулов (ID)
+    // Это будет работать корректно, только если вы всегда вызываете clearContents/setRowCount(0)
+    // Если вам нужно проверять артикулы уже присутствующие в таблице ДО очистки,
+    // логика должна быть изменена, чтобы сканировать таблицу перед циклом.
+    // Но исходя из вашего кода, таблица очищается, поэтому мы просто проверяем
+    // уникальность в текущем списке `products`.
+    QSet<qint64> existingProductIds;
 
     for (int i = 0; i < products.length(); i++) {
         QStringList parts = products[i].split(" | ", Qt::SkipEmptyParts);
@@ -202,6 +221,16 @@ void BasicForm::addDataInTable(QStringList products){
             qCritical() << "Ошибка парсинга числовых данных для строки:" << products[i];
             continue;
         }
+
+        // --- ДОБАВЛЕННАЯ ЛОГИКА ПРОВЕРКИ ДУБЛИКАТОВ ---
+        if (existingProductIds.contains(id)) {
+            qWarning() << "Товар с артикулом (ID) " << id << " уже был добавлен. Пропускаем.";
+            continue; // Пропускаем текущий товар, если артикул уже есть
+        }
+
+        // Добавляем ID в set, чтобы отслеживать его
+        existingProductIds.insert(id);
+        // ---------------------------------------------
 
         double total_price = quantity * price;
 
@@ -235,6 +264,7 @@ void BasicForm::addDataInTable(QStringList products){
         deleteButton->setSizePolicy(QSizePolicy::Fixed, QSizePolicy::Fixed);
         editButton->setSizePolicy(QSizePolicy::Fixed, QSizePolicy::Fixed);
 
+        // Привязка кнопок к слотам
         connect(detailsButton, &QPushButton::clicked, [this, id]() {
             this->on_detailsButton_clicked(id);
         });

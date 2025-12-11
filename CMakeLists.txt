@@ -54,6 +54,9 @@ if(${QT_VERSION_MAJOR} GREATER_EQUAL 6)
         AddPage/addform.h AddPage/addform.cpp UIfiles/addform.ui
         BusinessLogic/OutputWord/outputword.h BusinessLogic/OutputWord/outputword.cpp
         EditPage/editform.h EditPage/editform.cpp UIfiles/editform.ui
+        Settings/settingsform.h Settings/settingsform.cpp UIfiles/settingsform.ui
+        AddSupplyPage/addsupplyform.h AddSupplyPage/addsupplyform.cpp UIfiles/addsupplyform.ui
+        AddShipmentPage/addshipmentform.h AddShipmentPage/addshipmentform.cpp UIfiles/addshipmentform.ui
     )
 
     # Линкуем нужные модули ПОСЛЕ создания таргета
