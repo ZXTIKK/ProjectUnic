@@ -517,51 +517,106 @@ QStringList ProductManager::findProduct(const QString& searchTerm)
 
 QStringList ProductManager::getProductDataById(qint64 id)
 {
-    QStringList resultList;
+    QStringList result;
 
     QSqlDatabase db = openConnection();
-    if (!db.isOpen()) return resultList;
+    if (!db.isOpen()) {
+        qCritical() << "DB not open in getProductDataById";
+        return result;
+    }
 
     QSqlQuery query(db);
 
-    const QString selectQueryBase =
-        "SELECT p.id, p.product_name, p.quantity AS current_quantity, p.price, p.about, "
-        "s.shipment_date, s.quantity AS shipment_quantity, s.recipient_name, "
-        "su.supplies_date, su.quantity AS supplies_quantity, su.supplier_name "
-        "FROM products p "
-        "LEFT JOIN shipment s ON p.id = s.id_product "
-        "LEFT JOIN supplies su ON p.id = su.id_product "
-        "WHERE p.id = ?";
-
-    query.prepare(selectQueryBase);
+    // 1. Основные данные товара
+    query.prepare("SELECT id, product_name, quantity, price, about FROM products WHERE id = ?");
     query.addBindValue(id);
 
-    if (!query.exec()) {
-        qCritical() << "Error SELECT by ID in getProductDataById:" << query.lastError().text();
-        return resultList;
+    QString article, name, quantity, price, about;
+    if (!query.exec() || !query.next()) {
+        qWarning() << "Product not found:" << id;
+        return result;
     }
 
-    if (query.next()) {
-        resultList.append(QString::number(query.value(0).toLongLong()));
+    article  = QString::number(query.value(0).toLongLong());
+    name     = decryptString(query.value(1));
+    quantity = query.value(2).toString();
+    price    = query.value(3).toString();
+    about    = decryptString(query.value(4));
 
-        for (int i = 1; i < 11; ++i) {
-            QVariant value = query.value(i);
-            QString decryptedString;
+    // 2. Собираем поставки
+    QString suppliesForGraph;   // yyyy-MM-dd:qty|
+    QString suppliesForTable;   // yyyy-MM-dd|qty|Поставщик#
 
-            if (value.isNull() || value.toString().isEmpty()) {
-                decryptedString = "N/A";
-            } else {
-                QByteArray encryptedData = value.toByteArray();
-                QByteArray decryptedBytes = decryptData(encryptedData);
-                decryptedString = QString::fromUtf8(decryptedBytes);
+    query.prepare("SELECT supplies_date, quantity, supplier_name FROM supplies WHERE id_product = ? ORDER BY supplies_date DESC");
+    query.addBindValue(id);
+    if (query.exec()) {
+        while (query.next()) {
+            QDate date = query.value(0).toDate();
+            double qty = query.value(1).toDouble();
+            QString supplier = decryptString(query.value(2));
+
+            if (date.isValid() && qty > 0) {
+                suppliesForGraph += QString("%1:%2|").arg(date.toString("yyyy-MM-dd")).arg(qty, 0, 'f', 0);
+                suppliesForTable += QString("%1|%2|%3#")
+                                        .arg(date.toString("dd.MM.yyyy"))
+                                        .arg(qty, 0, 'f', 0)
+                                        .arg(supplier.isEmpty() ? "—" : supplier);
             }
-            resultList.append(decryptedString);
         }
-
-        qDebug() << "Product ID" << id << " data retrieved and decoded into QStringList.";
-        return resultList;
     }
 
-    qDebug() << "Product ID" << id << " not found.";
-    return resultList;
+    // 3. Собираем отгрузки
+    QString shipmentsForGraph;
+    QString shipmentsForTable;
+
+    query.prepare("SELECT shipment_date, quantity, recipient_name FROM shipment WHERE id_product = ? ORDER BY shipment_date DESC");
+    query.addBindValue(id);
+    if (query.exec()) {
+        while (query.next()) {
+            QDate date = query.value(0).toDate();
+            double qty = query.value(1).toDouble();
+            QString recipient = decryptString(query.value(2));
+
+            if (date.isValid() && qty > 0) {
+                shipmentsForGraph += QString("%1:%2|").arg(date.toString("yyyy-MM-dd")).arg(qty, 0, 'f', 0);
+                shipmentsForTable += QString("%1|%2|%3#")
+                                         .arg(date.toString("dd.MM.yyyy"))
+                                         .arg(qty, 0, 'f', 0)
+                                         .arg(recipient.isEmpty() ? "—" : recipient);
+            }
+        }
+    }
+
+    // suppliesForGraph   = "2025-10-15:50|2025-11-01:30|";
+    // suppliesForTable   = "15.10.2025|50|ООО Рога и Копыта#01.11.2025|30|Поставщик №2#";
+    // shipmentsForGraph  = "2025-11-20:20|2025-12-05:15|";
+    // shipmentsForTable  = "20.11.2025|20|ИП Иванов#05.12.2025|15|Магазин Детский мир#";
+
+    // 4. Заполняем результат (ровно 9 элементов!)
+    result << article           // 0
+           << name              // 1
+           << about             // 2
+           << price             // 3
+           << quantity          // 4
+           << suppliesForGraph  // 5 — для графика
+           << suppliesForTable  // 6 — для таблицы
+           << shipmentsForGraph // 7
+           << shipmentsForTable; // 8
+
+    qDebug() << result;
+
+
+              qDebug() << "getProductDataById(" << id << ") returned" << result.size() << "items";
+    qDebug() << "Supplies graph:" << suppliesForGraph;
+    qDebug() << "Shipments graph:" << shipmentsForGraph;
+
+    return result;
+}
+
+QString ProductManager::decryptString(const QVariant &v)
+{
+    if (v.isNull() || v.toString().isEmpty()) return "N/A";
+    QByteArray data = v.toByteArray();
+    QByteArray decrypted = decryptData(data);  // твоя функция
+    return QString::fromUtf8(decrypted);
 }

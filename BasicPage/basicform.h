@@ -30,7 +30,6 @@ public slots:
 
 private slots:
     void on_pushButton_add_clicked();
-    void on_detailsButton_clicked(qint64 id);
     void on_deleteButton_clicked(qint64 id);
     void on_editButton_clicked(qint64 id);
     void on_pushButton_find_clicked();

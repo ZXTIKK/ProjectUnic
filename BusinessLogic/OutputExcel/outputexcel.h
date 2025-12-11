@@ -1,31 +1,24 @@
-#ifndef outputexcel_H
-#define outputexcel_H
+#ifndef OUTPUTEXCEL_H
+#define OUTPUTEXCEL_H
 
 #include <QString>
-class outputexcel
+
+class QSqlQuery;
+
+class OutputExcel
 {
 public:
-    outputexcel();
+    OutputExcel();
+    ~OutputExcel() = default;
 
-    /**
-     * @brief
-     * @param
-     * @param
-     * @param
-     * @return
-     */
-    bool exportToCsvById(int id, const QString &filePath, const QString &fileName);
-
-    /**
-     * @brief
-     * @param
-     * @param
-     * @return
-     */
+    // Экспорт всех товаров
     bool exportAllToCsv(const QString &filePath, const QString &fileName);
 
+    // Экспорт одного товара по Id (можно не использовать, но оставим)
+    bool exportToCsvById(int id, const QString &filePath, const QString &fileName);
+
 private:
-    bool createCsvDocument(class QSqlQuery &query, const QString &fullPath);
+    bool createCsvDocument(QSqlQuery &query, const QString &fullPath);
 };
 
-#endif // outputexcel_H
+#endif // OUTPUTEXCEL_H

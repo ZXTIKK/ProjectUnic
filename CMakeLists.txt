@@ -1,39 +1,27 @@
 cmake_minimum_required(VERSION 3.16)
-
-
 project(ProjectUnic VERSION 0.1 LANGUAGES CXX)
 
-
-set(CMAKE_AUTOUIC ON)
-set(CMAKE_AUTOMOC ON)
-set(CMAKE_AUTORCC ON)
-set(CMAKE_AUTOUIC_SEARCH_PATHS UIfiles)
-
-
-# Устанавливаем стандарт C++17
 set(CMAKE_CXX_STANDARD 17)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 
+set(CMAKE_AUTOMOC ON)
+set(CMAKE_AUTORCC ON)
+set(CMAKE_AUTOUIC ON)
+set(CMAKE_AUTOUIC_SEARCH_PATHS ${CMAKE_CURRENT_SOURCE_DIR}/UIfiles)
 
-# === Определяем версию Qt ===
-find_package(QT NAMES Qt6 Qt5 REQUIRED COMPONENTS Core Widgets)
-set(QT_VERSION_MAJOR ${QT_VERSION_MAJOR})
+find_package(Qt6 REQUIRED COMPONENTS Core Gui Widgets Sql PrintSupport)
 
-find_package(Qt6 REQUIRED COMPONENTS Core Widgets Sql Gui)
-
-# === Подключаем компоненты Qt ===
-find_package(Qt${QT_VERSION_MAJOR} REQUIRED COMPONENTS Core Widgets Sql)
-
-# Для SQL — подключаем отдельно (не входит в Widgets/Core по умолчанию)
-find_package(Qt${QT_VERSION_MAJOR} REQUIRED COMPONENTS Sql)
-
-# === Список исходников ===
 set(PROJECT_SOURCES
     main.cpp
+
+    # ... (весь ваш список исходников)
+    BusinessLogic/QCustomPlot/qcustomplot.cpp
     BusinessLogic/ProductManager/productmanager.cpp
     BusinessLogic/ProductManager/productmanager.h
     BusinessLogic/Authentication/authentication.cpp
     BusinessLogic/Authentication/authentication.h
+    BusinessLogic/OutputWord/outputword.cpp
+    BusinessLogic/OutputWord/outputword.h
     MainWindow/mainwindow.cpp
     MainWindow/mainwindow.h
     UIfiles/mainwindow.ui
@@ -43,65 +31,68 @@ set(PROJECT_SOURCES
     BasicPage/basicform.cpp
     BasicPage/basicform.h
     UIfiles/basicform.ui
+    AddPage/addform.cpp
+    AddPage/addform.h
+    UIfiles/addform.ui
+    EditPage/editform.cpp
+    EditPage/editform.h
+    UIfiles/editform.ui
+    Settings/settingsform.cpp
+    Settings/settingsform.h
+    UIfiles/settingsform.ui
+    AddSupplyPage/addsupplyform.cpp
+    AddSupplyPage/addsupplyform.h
+    UIfiles/addsupplyform.ui
+    AddShipmentPage/addshipmentform.cpp
+    AddShipmentPage/addshipmentform.h
+    UIfiles/addshipmentform.ui
+    About/aboutform.cpp
+    About/aboutform.h
+    UIfiles/aboutform.ui
+    BusinessLogic/OutputExcel/outputexcel.cpp
 )
 
-# === Создаём таргет в зависимости от версии Qt ===
-if(${QT_VERSION_MAJOR} GREATER_EQUAL 6)
-    qt_add_executable(ProjectUnic
-        MANUAL_FINALIZATION
-        ${PROJECT_SOURCES}
-        BusinessLogic/ProductManager/productmanager.h BusinessLogic/ProductManager/productmanager.cpp
-        AddPage/addform.h AddPage/addform.cpp UIfiles/addform.ui
-        BusinessLogic/OutputWord/outputword.h BusinessLogic/OutputWord/outputword.cpp
-        EditPage/editform.h EditPage/editform.cpp UIfiles/editform.ui
-        Settings/settingsform.h Settings/settingsform.cpp UIfiles/settingsform.ui
-        AddSupplyPage/addsupplyform.h AddSupplyPage/addsupplyform.cpp UIfiles/addsupplyform.ui
-        AddShipmentPage/addshipmentform.h AddShipmentPage/addshipmentform.cpp UIfiles/addshipmentform.ui
-        About/aboutform.h About/aboutform.cpp UIfiles/aboutform.ui
-    )
+# ==========================================================
+# !!! КРИТИЧНОЕ ИСПРАВЛЕНИЕ: ДОБАВЛЕНИЕ ИСПОЛНЯЕМОГО ФАЙЛА
+# ==========================================================
+add_executable(ProjectUnic ${PROJECT_SOURCES})
+# Теперь ProjectUnic определен!
 
-    # Линкуем нужные модули ПОСЛЕ создания таргета
-    target_link_libraries(ProjectUnic PRIVATE
-        Qt6::Widgets
-        Qt6::Sql
-    )
+target_sources(ProjectUnic PRIVATE
+    BusinessLogic/QCustomPlot/qcustomplot.h
+)
 
-else()
-    # Qt5 — используем add_executable (или add_library для Android)
-    if(ANDROID)
-        add_library(ProjectUnic SHARED ${PROJECT_SOURCES})
-    else()
-        add_executable(ProjectUnic ${PROJECT_SOURCES})
-    endif()
+set_source_files_properties(BusinessLogic/QCustomPlot/qcustomplot.cpp
+    PROPERTIES SKIP_AUTOMOC ON
+)
 
-    target_link_libraries(ProjectUnic PRIVATE
-        Qt5::Widgets
-        Qt5::Sql
-    )
-endif()
+target_include_directories(ProjectUnic PRIVATE
+    BusinessLogic/QCustomPlot
+)
 
-# === Установка свойств таргета ===
-if(${QT_VERSION} VERSION_LESS 6.1.0)
-    set(BUNDLE_ID_OPTION MACOSX_BUNDLE_GUI_IDENTIFIER com.example.ProjectUnic)
+target_link_libraries(ProjectUnic PRIVATE
+    Qt6::Core
+    Qt6::Gui
+    Qt6::Widgets
+    Qt6::Sql
+    Qt6::PrintSupport
+)
+
+if(MINGW)
+    target_link_options(ProjectUnic PRIVATE -Wa,-mbig-obj)
+    target_compile_options(ProjectUnic PRIVATE -Wa,-mbig-obj)
+    target_compile_options(ProjectUnic PRIVATE -Wno-deprecated-declarations)
 endif()
 
 set_target_properties(ProjectUnic PROPERTIES
-    ${BUNDLE_ID_OPTION}
-    MACOSX_BUNDLE_BUNDLE_VERSION ${PROJECT_VERSION}
-    MACOSX_BUNDLE_SHORT_VERSION_STRING ${PROJECT_VERSION_MAJOR}.${PROJECT_VERSION_MINOR}
-    MACOSX_BUNDLE TRUE
-    WIN32_EXECUTABLE TRUE
+    MACOSX_BUNDLE ON
+    WIN32_EXECUTABLE ON
 )
 
-# === Установка (необязательно, но оставим) ===
 include(GNUInstallDirs)
 install(TARGETS ProjectUnic
     BUNDLE DESTINATION .
-    LIBRARY DESTINATION ${CMAKE_INSTALL_LIBDIR}
     RUNTIME DESTINATION ${CMAKE_INSTALL_BINDIR}
 )
 
-# === Финализация (обязательно при MANUAL_FINALIZATION) ===
-if(${QT_VERSION_MAJOR} EQUAL 6)
-    qt_finalize_executable(ProjectUnic)
-endif()
+qt_finalize_executable(ProjectUnic)

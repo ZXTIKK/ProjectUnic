@@ -89,6 +89,8 @@ MainWindow::MainWindow(QWidget *parent)
             this, &MainWindow::switchToBasicForm);
     connect(basicForm, &BasicForm::switchToAbout,
             this, &MainWindow::switchToAboutForm);
+    connect(aboutForm, &AboutForm::cancelAbout,
+            this, &MainWindow::switchToBasicForm);
 
 
 }
@@ -124,6 +126,7 @@ void MainWindow::switchToEditForm(qint64 id)
     setWindowTitle("Изменить товар");
     qDebug() << id;
 }
+
 
 LoginForm* MainWindow::getLoginForm(){
     return MainWindow::loginForm;

@@ -1,135 +1,103 @@
-// outputword.cpp
-
 #include "outputword.h"
+#include "../Authentication/authentication.h"
+
+// ← ВСЕ НУЖНЫЕ ЗАГОЛОВКИ ЗДЕСЬ!
 #include <QTextDocument>
-#include <QTextTable>
 #include <QTextCursor>
+#include <QTextTable>
 #include <QFile>
 #include <QTextStream>
 #include <QMessageBox>
+#include <QDateTime>
+#include <QSqlQuery>
+#include <QSqlDatabase>
 #include <QSqlError>
 
-OutputWord::OutputWord() {}
+OutputWord::OutputWord() = default;
 
-// --- ФУНКЦИЯ 1: ЭКСПОРТ ВСЕЙ ТАБЛИЦЫ ---
 bool OutputWord::exportAll(const QString &filePath, const QString &fileName)
 {
-    // Строим полный путь с расширением .html
     QString fullPath = QString("%1/%2.html").arg(filePath, fileName);
 
-    // Запрос: выбрать все строки
-    QSqlQuery query("SELECT Id, product_name, about, price, quantity FROM products");
+    QSqlDatabase db = Authentication::getConnect();
+    if (!db.isOpen()) {
+        QMessageBox::critical(nullptr, "Ошибка", "Нет подключения к БД");
+        return false;
+    }
 
-    if (!query.exec()) {
-        QMessageBox::critical(nullptr, "Ошибка БД",
-                              "Не удалось выполнить запрос: " + query.lastError().text());
+    QSqlQuery query(db);
+    if (!query.exec("SELECT Id, product_name, about, price, quantity FROM products ORDER BY Id")) {
+        QMessageBox::critical(nullptr, "Ошибка БД", query.lastError().text());
         return false;
     }
 
     return createDocument(query, fullPath);
 }
 
-// --- ФУНКЦИЯ 2: ЭКСПОРТ ПО ID ---
-bool OutputWord::exportById(int id, const QString &filePath, const QString &fileName)
-{
-    // Строим полный путь с расширением .html
-    QString fullPath = QString("%1/%2.html").arg(filePath, fileName);
-
-    // Запрос с привязкой значения для безопасности
-    QSqlQuery query;
-    query.prepare("SELECT Id, product_name, about, price, quantity FROM products WHERE Id = :id");
-    query.bindValue(":id", id);
-
-    if (!query.exec()) {
-        QMessageBox::critical(nullptr, "Ошибка БД",
-                              "Не удалось выполнить запрос: " + query.lastError().text());
-        return false;
-    }
-
-    // Проверка, найдена ли строка
-    if (query.size() == 0) {
-        QMessageBox::information(nullptr, "Нет данных",
-                                 "Продукт с ID = " + QString::number(id) + " не найден.");
-        return false;
-    }
-
-    return createDocument(query, fullPath);
-}
-
-// --- ВСПОМОГАТЕЛЬНАЯ ФУНКЦИЯ ДЛЯ СОЗДАНИЯ И СОХРАНЕНИЯ ДОКУМЕНТА ---
 bool OutputWord::createDocument(QSqlQuery &query, const QString &fullPath)
 {
-    QTextDocument document;
-    QTextCursor cursor(&document);
+    QTextDocument doc;
+    QTextCursor cursor(&doc);
 
     // Заголовок
-    QTextCharFormat formatTitle;
-    formatTitle.setFontPointSize(16);
-    formatTitle.setFontWeight(QFont::Bold);
-    cursor.insertText("Отчет о продуктах", formatTitle);
+    QTextCharFormat titleFmt;
+    titleFmt.setFontPointSize(20);
+    titleFmt.setFontWeight(QFont::Bold);
+    titleFmt.setForeground(QColor("#2c3e50"));
+    cursor.insertText("Полный отчёт по складу", titleFmt);
+    cursor.insertBlock();
+    cursor.insertText("Дата: " + QDateTime::currentDateTime().toString("dd.MM.yyyy hh:mm"));
     cursor.insertBlock();
     cursor.insertBlock();
 
-    // Подсчет строк для таблицы
-    int numRows = 0;
-    while (query.next()) {
-        numRows++;
-    }
-    // Сброс курсора запроса для повторного считывания данных
-    query.first();
-    query.previous();
+    int rows = 0;
+    while (query.next()) rows++;
+    query.seek(-1); // на начало
 
-    if (numRows == 0) {
-        cursor.insertText("Нет данных для экспорта.");
-    }
-
-    int numCols = 5;
-    QTextTableFormat tableFormat;
-    tableFormat.setBorder(1);
-    tableFormat.setCellSpacing(0);
-    tableFormat.setCellPadding(5);
-    tableFormat.setWidth(QTextLength(QTextLength::PercentageLength, 100));
-
-    // Создание таблицы (+1 для заголовка)
-    QTextTable *table = cursor.insertTable(numRows + 1, numCols, tableFormat);
-
-    // Заголовки таблицы
-    QTextCharFormat formatHeader;
-    formatHeader.setBackground(QColor("#E0E0E0"));
-    formatHeader.setFontWeight(QFont::Bold);
-
-    QStringList headers = {"Id", "product_name", "about", "price", "quantity"};
-
-    for (int i = 0; i < numCols; ++i) {
-        QTextTableCell cell = table->cellAt(0, i);
-        QTextCursor cellCursor = cell.firstCursorPosition();
-        cellCursor.insertText(headers.at(i), formatHeader);
-    }
-
-    // Заполнение таблицы данными
-    int row = 1;
-    while (query.next()) {
-        for (int col = 0; col < numCols; ++col) {
-            QTextTableCell cell = table->cellAt(row, col);
-            QTextCursor cellCursor = cell.firstCursorPosition();
-            cellCursor.insertText(query.value(col).toString());
-        }
-        row++;
-    }
-
-    // Сохранение документа в файл
-    QFile file(fullPath);
-    if (file.open(QIODevice::WriteOnly | QIODevice::Text)) {
-        QTextStream out(&file);
-        out << document.toHtml();
-        file.close();
-
-        QMessageBox::information(nullptr, "Экспорт успешен",
-                                 "Данные успешно экспортированы в файл: " + fullPath);
-        return true;
+    if (rows == 0) {
+        cursor.insertText("Нет данных");
     } else {
-        QMessageBox::critical(nullptr, "Ошибка файла",
-                              "Не удалось открыть файл для записи: " + fullPath);
+        QTextTableFormat tableFmt;
+        tableFmt.setBorder(1);
+        tableFmt.setCellPadding(8);
+        tableFmt.setWidth(QTextLength(QTextLength::PercentageLength, 100));
+
+        QTextTable *table = cursor.insertTable(rows + 1, 5, tableFmt);
+
+        QTextCharFormat headFmt;
+        headFmt.setBackground(QColor("#3498db"));
+        headFmt.setForeground(Qt::white);
+        headFmt.setFontWeight(QFont::Bold);
+
+        QStringList heads = {"Артикул", "Наименование", "Описание", "Цена", "Количество"};
+        for (int c = 0; c < 5; ++c) {
+            table->cellAt(0, c).firstCursorPosition().insertText(heads[c], headFmt);
+        }
+
+        int r = 1;
+        while (query.next()) {
+            for (int c = 0; c < 5; ++c) {
+                QString val = query.value(c).toString();
+                if (c >= 1 && c <= 2) {
+                    val = QString::fromUtf8(QByteArray::fromBase64(val.toUtf8()));
+                }
+                table->cellAt(r, c).firstCursorPosition().insertText(val);
+            }
+            r++;
+        }
+    }
+
+    QFile file(fullPath);
+    if (!file.open(QIODevice::WriteOnly | QIODevice::Text)) {
+        QMessageBox::critical(nullptr, "Ошибка", "Не удалось сохранить файл");
         return false;
     }
+
+    QTextStream out(&file);
+    out.setEncoding(QStringConverter::Utf8);
+    out << doc.toHtml(); // ← теперь работает!
+    file.close();
+
+    QMessageBox::information(nullptr, "Готово", "Отчёт сохранён:\n" + fullPath);
+    return true;
 }

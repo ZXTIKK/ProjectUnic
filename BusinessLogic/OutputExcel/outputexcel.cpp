@@ -1,109 +1,68 @@
 #include "outputexcel.h"
+#include "../Authentication/authentication.h"
+
+// ← ЭТИ ЗАГОЛОВКИ ОБЯЗАТЕЛЬНЫ!
 #include <QFile>
 #include <QSqlQuery>
+#include <QSqlDatabase>
 #include <QSqlError>
-#include <QVariant>
-#include <QStringList>
 #include <QByteArray>
-#include <QtDebug>
+#include <QDebug>
 
+OutputExcel::OutputExcel() = default;
 
-outputexcel::outputexcel() {}
-
-bool outputexcel::exportAllToCsv(const QString &filePath, const QString &fileName)
+bool OutputExcel::exportAllToCsv(const QString &filePath, const QString &fileName)
 {
     QString fullPath = QString("%1/%2.csv").arg(filePath, fileName);
 
-    QSqlQuery query("SELECT Id, product_name, about, price, quantity FROM products");
+    QSqlDatabase db = Authentication::getConnect();
+    if (!db.isValid() || !db.isOpen()) {
+        qWarning() << "OutputExcel: Нет подключения к БД!";
+        return false;
+    }
 
-    if (!query.exec()) {
-        qWarning() << "outputexcel Error: DB query failed for exportAllToCsv:" << query.lastError().text();
+    QSqlQuery query(db);
+    if (!query.exec("SELECT Id, product_name, about, price, quantity FROM products ORDER BY Id")) {
+        qWarning() << "OutputExcel:" << query.lastError().text();
         return false;
     }
 
     return createCsvDocument(query, fullPath);
 }
 
+// exportToCsvById оставляем как есть или удаляем, если не нужен
 
-bool outputexcel::exportToCsvById(int id, const QString &filePath, const QString &fileName)
-{
-    QString fullPath = QString("%1/%2.csv").arg(filePath, fileName);
-
-    QSqlQuery query;
-    query.prepare("SELECT Id, product_name, about, price, quantity FROM products WHERE Id = :id");
-    query.bindValue(":id", id);
-
-    if (!query.exec()) {
-        qWarning() << "outputexcel Error: DB query failed for exportToCsvById:" << query.lastError().text();
-        return false;
-    }
-
-    if (query.size() == 0) {
-        qWarning() << "outputexcel Warning: Product with ID =" << id << " not found for export.";
-        return false;
-    }
-
-    return createCsvDocument(query, fullPath);
-}
-
-
-bool outputexcel::createCsvDocument(QSqlQuery &query, const QString &fullPath)
+bool OutputExcel::createCsvDocument(QSqlQuery &query, const QString &fullPath)
 {
     QFile file(fullPath);
     if (!file.open(QIODevice::WriteOnly | QIODevice::Truncate)) {
-        qWarning() << "outputexcel Error: Failed to open file for writing:" << fullPath;
+        qWarning() << "Не могу открыть файл:" << fullPath;
         return false;
     }
 
-    QByteArray fileData;
-    fileData.append('\xEF');
-    fileData.append('\xBB');
-    fileData.append('\xBF');
+    QByteArray data;
+    data.append("\xEF\xBB\xBF"); // BOM
 
-    QString separator = ";";
+    const QString sep = ";";
+    const QStringList headers = {"Артикул", "Наименование", "Описание", "Цена", "Количество"};
+    data.append(headers.join(sep).toUtf8() + "\n");
 
-    QStringList headers = {"Id", "product_name", "about", "price", "quantity"};
-
-    fileData.append(headers.join(separator).toUtf8());
-    fileData.append('\n');
-
-    query.first();
-    query.previous();
-
-    int numRows = 0;
     while (query.next()) {
-        QStringList rowData;
-        int numCols = 5;
-
-        for (int col = 0; col < numCols; ++col) {
-            QString value = query.value(col).toString();
-            if (col >= 1 && col <= 4) {
-                QByteArray decodedBytes = QByteArray::fromBase64(value.toUtf8());
-                value = QString::fromUtf8(decodedBytes);
-                value.replace(separator, " ").trimmed();
+        QStringList row;
+        for (int i = 0; i < 5; ++i) {
+            QString val = query.value(i).toString();
+            if (i >= 1 && i <= 3) {
+                val = QString::fromUtf8(QByteArray::fromBase64(val.toUtf8()));
             }
-
-            rowData << "\"" + value + "\"";
+            val.replace('"', "\"\"");
+            val.replace(sep, " ");
+            row << "\"" + val.trimmed() + "\"";
         }
-
-        fileData.append(rowData.join(separator).toUtf8());
-        fileData.append('\n');
-        numRows++;
+        data.append(row.join(sep).toUtf8() + "\n");
     }
 
-    if (file.write(fileData) == -1) {
-        qWarning() << "outputexcel Error: Failed to write data block to file.";
-        file.close();
-        return false;
-    }
-
+    file.write(data);
     file.close();
-
-    if (numRows == 0) {
-        qWarning() << "outputexcel Warning: Export finished, but no data was written.";
-        return false;
-    }
-
-    qInfo() << "outputexcel Success: Data successfully exported to" << fullPath;
+    qInfo() << "CSV сохранён:" << fullPath;
     return true;
 }

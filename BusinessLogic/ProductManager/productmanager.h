@@ -54,6 +54,7 @@ public:
 
 private:
     static QSqlDatabase openConnection();
+    static QString decryptString(const QVariant &v);
 };
 
 #endif // PRODUCTMANAGER_H
