@@ -26,7 +26,7 @@ private slots:
     void on_pushButton_conf_clicked();
 
 signals:
-    void cancelAddSupply();
+    void cancelAddShipment();
 };
 
 #endif // ADDSHIPMENTFORM_H

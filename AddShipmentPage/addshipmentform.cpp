@@ -100,7 +100,7 @@ void AddShipmentForm::getData()
 
 void AddShipmentForm::on_pushButton_back_clicked()
 {
-    emit cancelAddSupply();
+    emit cancelAddShipment();
 }
 
 
@@ -136,7 +136,7 @@ void AddShipmentForm::on_pushButton_conf_clicked()
 
     ProductManager::addShipment(article.toInt(),quantity,supplyDate,supplier);
 
-    emit cancelAddSupply();
+    emit cancelAddShipment();
 
 
 }

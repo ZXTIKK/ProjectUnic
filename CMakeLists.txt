@@ -57,6 +57,7 @@ if(${QT_VERSION_MAJOR} GREATER_EQUAL 6)
         Settings/settingsform.h Settings/settingsform.cpp UIfiles/settingsform.ui
         AddSupplyPage/addsupplyform.h AddSupplyPage/addsupplyform.cpp UIfiles/addsupplyform.ui
         AddShipmentPage/addshipmentform.h AddShipmentPage/addshipmentform.cpp UIfiles/addshipmentform.ui
+        About/aboutform.h About/aboutform.cpp UIfiles/aboutform.ui
     )
 
     # Линкуем нужные модули ПОСЛЕ создания таргета

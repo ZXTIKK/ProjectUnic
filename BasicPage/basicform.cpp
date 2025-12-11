@@ -39,6 +39,11 @@ void BasicForm::on_pushButton_add_clicked()
     emit PageAdd();
 }
 
+void BasicForm::on_pushButton_about_clicked()
+{
+    emit switchToAbout();
+}
+
 void BasicForm::clearScrollArea()
 {
     if (!m_tableProducts.isNull()) {

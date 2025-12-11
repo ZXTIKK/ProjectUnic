@@ -15,6 +15,7 @@
 #include "../Settings/settingsform.h"
 #include "../AddSupplyPage/addsupplyform.h"
 #include "../AddShipmentPage/addshipmentform.h"
+#include "../About/aboutform.h"
 
 class MainWindow : public QMainWindow
 {
@@ -29,6 +30,7 @@ public:
     static EditForm* getEditForm();
     static SettingsForm* getSettingsForm();
     static AddShipmentForm* getAddShipmentForm();
+    static AboutForm* getAbout();
 
 private slots:
     void switchToBasicForm();
@@ -40,6 +42,7 @@ private slots:
     void switchToLoginPage();
     void switchToAddSupplyForm();
     void switchToAddShipmentForm();
+    void switchToAboutForm();
 
 private:
     QStackedWidget *stackedWidget;
@@ -50,6 +53,7 @@ private:
     int settingsIndex;
     int addSupplyIndex;
     int addShipmentIndex;
+    int aboutIndex;
     static LoginForm *loginForm;
     static BasicForm *basicForm;
     static AddForm *addForm;
@@ -57,6 +61,7 @@ private:
     static SettingsForm *settingsForm;
     static AddSupplyForm *addSupplyForm;
     static AddShipmentForm *addShipmentForm;
+    static AboutForm *aboutForm;
 };
 
 #endif // MAINWINDOW_H

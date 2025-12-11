@@ -24,6 +24,7 @@ EditForm* MainWindow::editForm = nullptr;
 SettingsForm* MainWindow::settingsForm = nullptr;
 AddSupplyForm* MainWindow::addSupplyForm = nullptr;
 AddShipmentForm* MainWindow::addShipmentForm = nullptr;
+AboutForm* MainWindow::aboutForm = nullptr;
 
 MainWindow::MainWindow(QWidget *parent)
     : QMainWindow(parent)
@@ -38,6 +39,7 @@ MainWindow::MainWindow(QWidget *parent)
     settingsForm = new SettingsForm();
     addSupplyForm = new AddSupplyForm();
     addShipmentForm = new AddShipmentForm();
+    aboutForm = new AboutForm();
 
     loginIndex = stackedWidget->addWidget(loginForm);
     basicIndex = stackedWidget->addWidget(basicForm);
@@ -45,7 +47,8 @@ MainWindow::MainWindow(QWidget *parent)
     editIndex = stackedWidget->addWidget(editForm);
     settingsIndex = stackedWidget->addWidget(settingsForm);
     addSupplyIndex = stackedWidget->addWidget(addSupplyForm);
-    addShipmentIndex = stackedWidget->addWidget(addSupplyForm);
+    addShipmentIndex = stackedWidget->addWidget(addShipmentForm);
+    aboutIndex = stackedWidget->addWidget(aboutForm);
 
     if(SettingsForm::loadSettingsFromRegistry())
     {
@@ -82,6 +85,10 @@ MainWindow::MainWindow(QWidget *parent)
             basicForm, &BasicForm::updateDate);
     connect(basicForm, &BasicForm::switchToAddShipmentForm,
             this,&MainWindow::switchToAddShipmentForm);
+    connect(addShipmentForm, &AddShipmentForm::cancelAddShipment,
+            this, &MainWindow::switchToBasicForm);
+    connect(basicForm, &BasicForm::switchToAbout,
+            this, &MainWindow::switchToAboutForm);
 
 
 }
@@ -155,4 +162,10 @@ void MainWindow::switchToAddShipmentForm()
 {
     stackedWidget->setCurrentIndex(addShipmentIndex);
     setWindowTitle("Отгрузка");
+}
+
+void MainWindow::switchToAboutForm()
+{
+    stackedWidget->setCurrentIndex(aboutIndex);
+    setWindowTitle("О товарах");
 }
