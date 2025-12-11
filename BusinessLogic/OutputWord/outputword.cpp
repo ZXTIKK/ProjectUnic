@@ -1,5 +1,3 @@
-// outputword.cpp
-
 #include "outputword.h"
 #include <QTextDocument>
 #include <QTextTable>
@@ -11,13 +9,10 @@
 
 OutputWord::OutputWord() {}
 
-// --- ФУНКЦИЯ 1: ЭКСПОРТ ВСЕЙ ТАБЛИЦЫ ---
 bool OutputWord::exportAll(const QString &filePath, const QString &fileName)
 {
-    // Строим полный путь с расширением .html
     QString fullPath = QString("%1/%2.html").arg(filePath, fileName);
 
-    // Запрос: выбрать все строки
     QSqlQuery query("SELECT Id, product_name, about, price, quantity FROM products");
 
     if (!query.exec()) {
@@ -29,13 +24,10 @@ bool OutputWord::exportAll(const QString &filePath, const QString &fileName)
     return createDocument(query, fullPath);
 }
 
-// --- ФУНКЦИЯ 2: ЭКСПОРТ ПО ID ---
 bool OutputWord::exportById(int id, const QString &filePath, const QString &fileName)
 {
-    // Строим полный путь с расширением .html
     QString fullPath = QString("%1/%2.html").arg(filePath, fileName);
 
-    // Запрос с привязкой значения для безопасности
     QSqlQuery query;
     query.prepare("SELECT Id, product_name, about, price, quantity FROM products WHERE Id = :id");
     query.bindValue(":id", id);
@@ -46,7 +38,6 @@ bool OutputWord::exportById(int id, const QString &filePath, const QString &file
         return false;
     }
 
-    // Проверка, найдена ли строка
     if (query.size() == 0) {
         QMessageBox::information(nullptr, "Нет данных",
                                  "Продукт с ID = " + QString::number(id) + " не найден.");
@@ -56,13 +47,11 @@ bool OutputWord::exportById(int id, const QString &filePath, const QString &file
     return createDocument(query, fullPath);
 }
 
-// --- ВСПОМОГАТЕЛЬНАЯ ФУНКЦИЯ ДЛЯ СОЗДАНИЯ И СОХРАНЕНИЯ ДОКУМЕНТА ---
 bool OutputWord::createDocument(QSqlQuery &query, const QString &fullPath)
 {
     QTextDocument document;
     QTextCursor cursor(&document);
 
-    // Заголовок
     QTextCharFormat formatTitle;
     formatTitle.setFontPointSize(16);
     formatTitle.setFontWeight(QFont::Bold);
@@ -70,12 +59,10 @@ bool OutputWord::createDocument(QSqlQuery &query, const QString &fullPath)
     cursor.insertBlock();
     cursor.insertBlock();
 
-    // Подсчет строк для таблицы
     int numRows = 0;
     while (query.next()) {
         numRows++;
     }
-    // Сброс курсора запроса для повторного считывания данных
     query.first();
     query.previous();
 
@@ -90,10 +77,8 @@ bool OutputWord::createDocument(QSqlQuery &query, const QString &fullPath)
     tableFormat.setCellPadding(5);
     tableFormat.setWidth(QTextLength(QTextLength::PercentageLength, 100));
 
-    // Создание таблицы (+1 для заголовка)
     QTextTable *table = cursor.insertTable(numRows + 1, numCols, tableFormat);
 
-    // Заголовки таблицы
     QTextCharFormat formatHeader;
     formatHeader.setBackground(QColor("#E0E0E0"));
     formatHeader.setFontWeight(QFont::Bold);
@@ -106,7 +91,6 @@ bool OutputWord::createDocument(QSqlQuery &query, const QString &fullPath)
         cellCursor.insertText(headers.at(i), formatHeader);
     }
 
-    // Заполнение таблицы данными
     int row = 1;
     while (query.next()) {
         for (int col = 0; col < numCols; ++col) {
@@ -117,7 +101,6 @@ bool OutputWord::createDocument(QSqlQuery &query, const QString &fullPath)
         row++;
     }
 
-    // Сохранение документа в файл
     QFile file(fullPath);
     if (file.open(QIODevice::WriteOnly | QIODevice::Text)) {
         QTextStream out(&file);
