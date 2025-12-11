@@ -12,10 +12,12 @@
 #include "../LoginPage/loginform.h"
 #include "../BasicPage/basicform.h"
 #include "../AddPage/addform.h"
+#include "../EditPage/editform.h"
 
 LoginForm* MainWindow::loginForm = nullptr;
 BasicForm* MainWindow::basicForm = nullptr;
 AddForm* MainWindow::addForm = nullptr;
+EditForm* MainWindow::editForm = nullptr;
 
 MainWindow::MainWindow(QWidget *parent)
     : QMainWindow(parent)
@@ -26,10 +28,12 @@ MainWindow::MainWindow(QWidget *parent)
     loginForm = new LoginForm();
     basicForm = new BasicForm();
     addForm = new AddForm();
+    editForm = new EditForm();
 
     loginIndex = stackedWidget->addWidget(loginForm);
     basicIndex = stackedWidget->addWidget(basicForm);
     addIndex = stackedWidget->addWidget(addForm);
+    editIndex = stackedWidget->addWidget(editForm);
 
     stackedWidget->setCurrentIndex(loginIndex);
     setWindowTitle("Авторизация");
@@ -40,6 +44,10 @@ MainWindow::MainWindow(QWidget *parent)
             this, &MainWindow::switchToAddForm);
     connect(addForm, &AddForm::Cancel,
             this, &MainWindow::cancelFromAdd);
+    connect(basicForm, &BasicForm::switchToEditForm,
+            this, &MainWindow::switchToEditForm);
+    connect(editForm, &EditForm::Cancel,
+            this, &MainWindow::cancelFromEdit);
 
 }
 
@@ -63,6 +71,18 @@ void MainWindow::cancelFromAdd()
     setWindowTitle("Товары");
 }
 
+void MainWindow::cancelFromEdit(){
+    stackedWidget->setCurrentIndex(basicIndex);
+    setWindowTitle("Товары");
+}
+
+void MainWindow::switchToEditForm(qint64 id)
+{
+    stackedWidget->setCurrentIndex(editIndex);
+    setWindowTitle("Изменить товар");
+    qDebug() << id;
+}
+
 LoginForm* MainWindow::getLoginForm(){
     return MainWindow::loginForm;
 }
@@ -73,4 +93,8 @@ BasicForm* MainWindow::getBasicForm(){
 
 AddForm* MainWindow::getAddForm(){
     return MainWindow::addForm;
+}
+
+EditForm* MainWindow::getEditForm(){
+    return MainWindow::editForm;
 }

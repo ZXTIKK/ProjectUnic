@@ -514,3 +514,54 @@ QStringList ProductManager::findProduct(const QString& searchTerm)
     qDebug() << "Поиск '" << searchTerm << "' завершен. Найдено" << resultList.size() << "записей.";
     return resultList;
 }
+
+QStringList ProductManager::getProductDataById(qint64 id)
+{
+    QStringList resultList;
+
+    QSqlDatabase db = openConnection();
+    if (!db.isOpen()) return resultList;
+
+    QSqlQuery query(db);
+
+    const QString selectQueryBase =
+        "SELECT p.id, p.product_name, p.quantity AS current_quantity, p.price, p.about, "
+        "s.shipment_date, s.quantity AS shipment_quantity, s.recipient_name, "
+        "su.supplies_date, su.quantity AS supplies_quantity, su.supplier_name "
+        "FROM products p "
+        "LEFT JOIN shipment s ON p.id = s.id_product "
+        "LEFT JOIN supplies su ON p.id = su.id_product "
+        "WHERE p.id = ?";
+
+    query.prepare(selectQueryBase);
+    query.addBindValue(id);
+
+    if (!query.exec()) {
+        qCritical() << "Error SELECT by ID in getProductDataById:" << query.lastError().text();
+        return resultList;
+    }
+
+    if (query.next()) {
+        resultList.append(QString::number(query.value(0).toLongLong()));
+
+        for (int i = 1; i < 11; ++i) {
+            QVariant value = query.value(i);
+            QString decryptedString;
+
+            if (value.isNull() || value.toString().isEmpty()) {
+                decryptedString = "N/A";
+            } else {
+                QByteArray encryptedData = value.toByteArray();
+                QByteArray decryptedBytes = decryptData(encryptedData);
+                decryptedString = QString::fromUtf8(decryptedBytes);
+            }
+            resultList.append(decryptedString);
+        }
+
+        qDebug() << "Product ID" << id << " data retrieved and decoded into QStringList.";
+        return resultList;
+    }
+
+    qDebug() << "Product ID" << id << " not found.";
+    return resultList;
+}

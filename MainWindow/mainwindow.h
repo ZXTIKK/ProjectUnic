@@ -11,6 +11,7 @@
 #include "../LoginPage/loginform.h"
 #include "../BasicPage/basicform.h"
 #include "../AddPage/addform.h"
+#include "../EditPage/editform.h"
 
 class MainWindow : public QMainWindow
 {
@@ -22,21 +23,25 @@ public:
     static LoginForm* getLoginForm();
     static BasicForm* getBasicForm();
     static AddForm* getAddForm();
+    static EditForm* getEditForm();
 
 private slots:
     void switchToBasicForm();
     void switchToAddForm();
     void cancelFromAdd();
+    void switchToEditForm(qint64 id);
+    void cancelFromEdit();
 
 private:
     QStackedWidget *stackedWidget;
     int basicIndex;
     int loginIndex;
     int addIndex;
+    int editIndex;
     static LoginForm *loginForm;
     static BasicForm *basicForm;
     static AddForm *addForm;
-
+    static EditForm *editForm;
 
 };
 

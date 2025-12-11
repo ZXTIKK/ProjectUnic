@@ -53,6 +53,7 @@ if(${QT_VERSION_MAJOR} GREATER_EQUAL 6)
         BusinessLogic/ProductManager/productmanager.h BusinessLogic/ProductManager/productmanager.cpp
         AddPage/addform.h AddPage/addform.cpp UIfiles/addform.ui
         BusinessLogic/OutputWord/outputword.h BusinessLogic/OutputWord/outputword.cpp
+        EditPage/editform.h EditPage/editform.cpp UIfiles/editform.ui
     )
 
     # Линкуем нужные модули ПОСЛЕ создания таргета

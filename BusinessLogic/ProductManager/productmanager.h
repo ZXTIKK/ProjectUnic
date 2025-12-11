@@ -50,6 +50,8 @@ public:
 
     static QStringList findProduct(const QString& searchTerm);
 
+    static QStringList getProductDataById(qint64 id);
+
 private:
     static QSqlDatabase openConnection();
 };

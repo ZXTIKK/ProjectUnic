@@ -36,6 +36,7 @@ private slots:
 
 signals:
     void PageAdd();
+    void switchToEditForm(qint64 id);
 };
 
 #endif // BASICFORM_H

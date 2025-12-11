@@ -76,6 +76,7 @@ void BasicForm::on_deleteButton_clicked(qint64 id)
 void BasicForm::on_editButton_clicked(qint64 id)
 {
     qDebug() << "Нажата кнопка 'изменить' для продукта с ID:" << id;
+    emit switchToEditForm(id);
 }
 
 
