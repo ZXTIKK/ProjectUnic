@@ -113,9 +113,9 @@ void AddShipmentForm::on_pushButton_conf_clicked()
         return;
     }
 
-    QString supplier = ui->lineEdit_shipment->text().trimmed();
-    if (supplier.isEmpty()) {
-        QMessageBox::critical(this, "Ошибка ввода", "Поле 'Поставщик' не может быть пустым.");
+    QString recipient = ui->lineEdit_shipment->text().trimmed();
+    if (recipient.isEmpty()) {
+        QMessageBox::critical(this, "Ошибка ввода", "Поле 'Получатель' не может быть пустым.");
         ui->lineEdit_shipment->setFocus();
         return;
     }
@@ -127,14 +127,9 @@ void AddShipmentForm::on_pushButton_conf_clicked()
         return;
     }
 
-    bool okPrice;
+    QDate shipmentDate = ui->dateEdit_date->date();
 
-    QLocale locale;
-
-    QDate supplyDate = ui->dateEdit_date->date();
-
-
-    ProductManager::addShipment(article.toInt(),quantity,supplyDate,supplier);
+    ProductManager::addShipment(article.toLongLong(), quantity, shipmentDate, recipient);
 
     emit cancelAddShipment();
 

@@ -78,7 +78,8 @@ bool OutputWord::createDocument(QSqlQuery &query, const QString &fullPath)
         while (query.next()) {
             for (int c = 0; c < 5; ++c) {
                 QString val = query.value(c).toString();
-                if (c >= 1 && c <= 2) {
+                // Столбцы 1..4 (name, about, price, quantity) хранятся в Base64.
+                if (c >= 1 && c <= 4) {
                     val = QString::fromUtf8(QByteArray::fromBase64(val.toUtf8()));
                 }
                 table->cellAt(r, c).firstCursorPosition().insertText(val);

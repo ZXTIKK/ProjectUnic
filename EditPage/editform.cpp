@@ -32,10 +32,11 @@ void EditForm::updateData(qint64 id){
         return;
     }
 
+    // Порядок полей из getProductDataById: 0=id, 1=name, 2=about, 3=price, 4=quantity
     ui->lineEdit_name->setText(data[1]);
-    ui->textEdit_about->setText(data[4]);
+    ui->textEdit_about->setText(data[2]);
     ui->doubleSpinBox_price->setValue(data[3].toDouble());
-    ui->spinBox_count->setValue(data[2].toInt());
+    ui->spinBox_count->setValue(data[4].toInt());
 
     for(int i = 1; i < 5; i++){
         qDebug() << "data[" << i << "]:" << data[i];

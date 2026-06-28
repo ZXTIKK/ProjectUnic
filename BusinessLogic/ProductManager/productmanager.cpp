@@ -108,42 +108,28 @@ QStringList ProductManager::getAllProducts()
 
     QSqlQuery query(db);
 
+    // Одна строка на товар. JOIN'ы с supplies/shipment убраны — раньше они
+    // создавали декартово произведение и дублировали товары в списке.
     const QString selectQuery =
-        "SELECT p.id, p.product_name, p.quantity AS current_quantity, p.price, p.about, "
-        "s.shipment_date, s.quantity AS shipment_quantity, s.recipient_name, "
-        "su.supplies_date, su.quantity AS supplies_quantity, su.supplier_name "
-        "FROM products p "
-        "LEFT JOIN shipment s ON p.id = s.id_product "
-        "LEFT JOIN supplies su ON p.id = su.id_product";
-
+        "SELECT id, product_name, quantity, price, about "
+        "FROM products ORDER BY id";
 
     if (!query.exec(selectQuery))
     {
-        qCritical() << "Error SELECT with JOINS:" << query.lastError().text();
+        qCritical() << "Error SELECT products:" << query.lastError().text();
         return resultList;
     }
 
     while (query.next()) {
-        QString row;
-        row += QString("ID: %1 | ").arg(query.value(0).toLongLong());
-
-        for (int i = 1; i < 11; ++i) {
-            QVariant value = query.value(i);
-            QString decryptedString;
-
-            if (value.isNull() || value.toString().isEmpty()) {
-                decryptedString = "N/A";
-            } else {
-                QByteArray encryptedData = value.toByteArray();
-                QByteArray decryptedBytes = decryptData(encryptedData);
-                decryptedString = QString::fromUtf8(decryptedBytes);
-            }
-            row += QString("%1 | ").arg(decryptedString);
+        // Формат строки: "ID: <id> | name | quantity | price | about |"
+        QString row = QString("ID: %1 | ").arg(query.value(0).toLongLong());
+        for (int i = 1; i < 5; ++i) {
+            row += QString("%1 | ").arg(decryptString(query.value(i)));
         }
         resultList.append(row.trimmed());
     }
 
-    qDebug() << "Получено" << resultList.size() << "записей с полной информацией (Base64 decoded).";
+    qDebug() << "Получено" << resultList.size() << "товаров (по одной строке на товар).";
     return resultList;
 }
 
@@ -537,10 +523,11 @@ QStringList ProductManager::getProductDataById(qint64 id)
         return result;
     }
 
+    // Все текстовые/числовые поля товара хранятся в Base64 — расшифровываем их все.
     article  = QString::number(query.value(0).toLongLong());
     name     = decryptString(query.value(1));
-    quantity = query.value(2).toString();
-    price    = query.value(3).toString();
+    quantity = decryptString(query.value(2));
+    price    = decryptString(query.value(3));
     about    = decryptString(query.value(4));
 
     // 2. Собираем поставки
@@ -551,16 +538,18 @@ QStringList ProductManager::getProductDataById(qint64 id)
     query.addBindValue(id);
     if (query.exec()) {
         while (query.next()) {
-            QDate date = query.value(0).toDate();
-            double qty = query.value(1).toDouble();
+            // supplies_date и quantity тоже в Base64 — сперва расшифровываем.
+            QDate date = QDate::fromString(decryptString(query.value(0)), "yyyy-MM-dd");
+            bool okQty = false;
+            double qty = decryptString(query.value(1)).toDouble(&okQty);
             QString supplier = decryptString(query.value(2));
 
-            if (date.isValid() && qty > 0) {
+            if (date.isValid() && okQty && qty > 0) {
                 suppliesForGraph += QString("%1:%2|").arg(date.toString("yyyy-MM-dd")).arg(qty, 0, 'f', 0);
                 suppliesForTable += QString("%1|%2|%3#")
                                         .arg(date.toString("dd.MM.yyyy"))
                                         .arg(qty, 0, 'f', 0)
-                                        .arg(supplier.isEmpty() ? "—" : supplier);
+                                        .arg(supplier == "N/A" ? "—" : supplier);
             }
         }
     }
@@ -573,16 +562,17 @@ QStringList ProductManager::getProductDataById(qint64 id)
     query.addBindValue(id);
     if (query.exec()) {
         while (query.next()) {
-            QDate date = query.value(0).toDate();
-            double qty = query.value(1).toDouble();
+            QDate date = QDate::fromString(decryptString(query.value(0)), "yyyy-MM-dd");
+            bool okQty = false;
+            double qty = decryptString(query.value(1)).toDouble(&okQty);
             QString recipient = decryptString(query.value(2));
 
-            if (date.isValid() && qty > 0) {
+            if (date.isValid() && okQty && qty > 0) {
                 shipmentsForGraph += QString("%1:%2|").arg(date.toString("yyyy-MM-dd")).arg(qty, 0, 'f', 0);
                 shipmentsForTable += QString("%1|%2|%3#")
                                          .arg(date.toString("dd.MM.yyyy"))
                                          .arg(qty, 0, 'f', 0)
-                                         .arg(recipient.isEmpty() ? "—" : recipient);
+                                         .arg(recipient == "N/A" ? "—" : recipient);
             }
         }
     }
@@ -615,8 +605,18 @@ QStringList ProductManager::getProductDataById(qint64 id)
 
 QString ProductManager::decryptString(const QVariant &v)
 {
-    if (v.isNull() || v.toString().isEmpty()) return "N/A";
-    QByteArray data = v.toByteArray();
-    QByteArray decrypted = decryptData(data);  // твоя функция
-    return QString::fromUtf8(decrypted);
+    // Устойчивая дешифрация: NULL, пустое значение или не-Base64 → "N/A".
+    if (!v.isValid() || v.isNull()) return "N/A";
+
+    const QByteArray data = v.toByteArray();
+    if (data.isEmpty()) return "N/A";
+
+    auto decoded = QByteArray::fromBase64Encoding(
+        data, QByteArray::Base64Encoding | QByteArray::AbortOnBase64DecodingErrors);
+
+    if (decoded.decodingStatus != QByteArray::Base64DecodingStatus::Ok)
+        return "N/A";
+
+    const QString result = QString::fromUtf8(decoded.decoded);
+    return result.isEmpty() ? "N/A" : result;
 }

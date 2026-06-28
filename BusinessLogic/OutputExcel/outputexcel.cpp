@@ -51,7 +51,8 @@ bool OutputExcel::createCsvDocument(QSqlQuery &query, const QString &fullPath)
         QStringList row;
         for (int i = 0; i < 5; ++i) {
             QString val = query.value(i).toString();
-            if (i >= 1 && i <= 3) {
+            // Столбцы 1..4 (name, about, price, quantity) хранятся в Base64.
+            if (i >= 1 && i <= 4) {
                 val = QString::fromUtf8(QByteArray::fromBase64(val.toUtf8()));
             }
             val.replace('"', "\"\"");

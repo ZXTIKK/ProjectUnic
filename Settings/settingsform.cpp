@@ -85,10 +85,10 @@ void SettingsForm::on_pushButton_conf_clicked()
     QString address = ui->lineEdit_Adress->text().trimmed();
     quint16 port = 0;
 
-    bool ok;
+    bool ok{false};
     port = static_cast<quint16>(ui->spinBox_port->value());
 
-    if (!ok || port == 0) {
+    if (port > 65535 || port <= 0) {
         QMessageBox::critical(this, "Ошибка ввода", "Введите корректный номер порта (1 - 65535).");
         return;
     }

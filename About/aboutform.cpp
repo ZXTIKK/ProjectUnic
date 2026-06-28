@@ -7,6 +7,16 @@
 #include <QTableWidgetItem>
 #include <QLabel>
 #include <QHeaderView>
+#include <QMap>
+#include <QDate>
+#include <QFrame>
+#include <QFileDialog>
+#include <QStandardPaths>
+#include <QTemporaryDir>
+#include <QFile>
+#include <QFileInfo>
+#include <QMessageBox>
+#include <QDateTime>
 #include "../BusinessLogic/QCustomPlot/qcustomplot.h"
 
 #include "../MainWindow/mainwindow.h"
@@ -43,6 +53,24 @@ void AboutForm::on_pushButton_back_clicked()
     emit cancelAbout();
 }
 
+// Разбирает строку графика "yyyy-MM-dd:qty|yyyy-MM-dd:qty|" в карту дата→количество.
+static QMap<QDate, double> parseGraphSeries(const QString &series)
+{
+    QMap<QDate, double> result;
+    const QStringList entries = series.split('|', Qt::SkipEmptyParts);
+    for (const QString &entry : entries) {
+        const int sep = entry.indexOf(':');
+        if (sep <= 0) continue;
+
+        const QDate date = QDate::fromString(entry.left(sep), "yyyy-MM-dd");
+        bool ok = false;
+        const double qty = entry.mid(sep + 1).toDouble(&ok);
+        if (date.isValid() && ok && qty > 0)
+            result[date] += qty;
+    }
+    return result;
+}
+
 // Вспомогательная функция: создаёт QTableWidget
 QTableWidget* createTable(const QStringList &headers, const QStringList &data, int columnsCount)
 {
@@ -68,36 +96,14 @@ QTableWidget* createTable(const QStringList &headers, const QStringList &data, i
     return table;
 }
 
-// Новая функция: добавляет два графика — поставки и отгрузки
-void AboutForm::addSupplyAndShipmentCharts(QVBoxLayout *productLayout, const QStringList &records, qint64 articleNumber)
+// Добавляет два графика — поставки и отгрузки. Данные приходят уже
+// расшифрованными и сгруппированными по датам из getProductDataById().
+void AboutForm::addSupplyAndShipmentCharts(QVBoxLayout *productLayout,
+                                           const QMap<QDate, double> &supplies,
+                                           const QMap<QDate, double> &shipments,
+                                           double currentStock,
+                                           qint64 articleNumber)
 {
-    QMap<QDate, double> supplies;
-    QMap<QDate, double> shipments;
-
-    for (const QString &record : records) {
-        QStringList f = record.split('|', Qt::SkipEmptyParts);
-
-        // Поставки
-        if (f.size() > 10) {
-            QString d = f[8].trimmed();
-            double q = f[9].toDouble();
-            if (q > 0 && d != "N/A") {
-                QDate date = QDate::fromString(d, "yyyy-MM-dd");
-                if (date.isValid()) supplies[date] += q;
-            }
-        }
-
-        // Отгрузки
-        if (f.size() > 7) {
-            QString d = f[5].trimmed();
-            double q = f[6].toDouble();
-            if (q > 0 && d != "N/A") {
-                QDate date = QDate::fromString(d, "yyyy-MM-dd");
-                if (date.isValid()) shipments[date] += q;
-            }
-        }
-    }
-
     if (supplies.isEmpty() && shipments.isEmpty()) {
         productLayout->addWidget(new QLabel("<i>Нет движений по товару</i>"));
         return;
@@ -106,19 +112,15 @@ void AboutForm::addSupplyAndShipmentCharts(QVBoxLayout *productLayout, const QSt
     QDate start = QDate::currentDate();
     QDate end   = QDate::currentDate();
 
-    for (QDate d : supplies.keys())  { start = qMin(start, d); end = qMax(end, d); }
-    for (QDate d : shipments.keys()) { start = qMin(start, d); end = qMax(end, d); }
+    for (const QDate &d : supplies.keys())  { start = qMin(start, d); end = qMax(end, d); }
+    for (const QDate &d : shipments.keys()) { start = qMin(start, d); end = qMax(end, d); }
 
     QVector<QDate> days;
     for (QDate d = start; d <= end; d = d.addDays(1)) {
         days << d;
     }
 
-    double stock = 0.0;
-    if (!records.isEmpty()) {
-        QStringList p = records.first().split('|', Qt::SkipEmptyParts);
-        if (p.size() > 2) stock = p[2].toDouble();
-    }
+    double stock = currentStock;
 
     QMap<QDate, double> stockLevel;
     for (const QDate &d : days) {
@@ -234,7 +236,7 @@ void AboutForm::generateAbout()
     }
 
     QStringList allProductsData = ProductManager::getAllProducts();
-    qDebug() << "Начало генерации AboutForm. Записей:" << allProductsData.size();
+    qDebug() << "Начало генерации AboutForm. Товаров:" << allProductsData.size();
 
     if (allProductsData.isEmpty()) {
         mainLayout->addWidget(new QLabel("Нет данных о продуктах."));
@@ -242,16 +244,25 @@ void AboutForm::generateAbout()
         return;
     }
 
-    // Группируем по ID продукта
-    QMap<qint64, QStringList> productRecords;
+    // getAllProducts() возвращает по одной строке на товар. Берём из неё только
+    // ID, а детальные данные (движения) запрашиваем через getProductDataById().
     for (const QString &record : allProductsData) {
         QString idStr = record.section(':', 1, 1).section('|', 0, 0).trimmed();
-        qint64 id = idStr.toLongLong();
-        productRecords[id].append(record);
-    }
+        qint64 productId = idStr.toLongLong();
 
-    for (qint64 productId : productRecords.keys()) {
-        const QStringList &records = productRecords.value(productId);
+        // Полные данные товара:
+        // 0=id 1=name 2=about 3=price 4=quantity
+        // 5=suppliesGraph 6=suppliesTable 7=shipmentsGraph 8=shipmentsTable
+        QStringList data = ProductManager::getProductDataById(productId);
+        if (data.size() < 9) {
+            qWarning() << "Пропуск товара" << productId << "— недостаточно данных:" << data.size();
+            continue;
+        }
+
+        const QString productName = data[1];
+        const QString about       = data[2];
+        const QString price       = data[3];
+        const QString quantity    = data[4];
 
         QWidget *productBlock = new QWidget();
         QVBoxLayout *productLayout = new QVBoxLayout(productBlock);
@@ -262,25 +273,20 @@ void AboutForm::generateAbout()
                                     " { border: 1px solid #CCCCCC; padding: 10px; margin: 10px; }");
 
         // Название продукта
-        QString productName = records.first().section('|', 1, 1).section(':', 0, 0).trimmed();
         QLabel *titleLabel = new QLabel(QString("<h3>Продукт ID %1: %2</h3>").arg(productId).arg(productName));
         productLayout->addWidget(titleLabel);
 
         // Основная информация
         QStringList productInfoHeaders = {"Название", "Кол-во", "Цена", "Описание"};
-        QString productData = records.first().section('|', 1, 4);
+        QString productData = QString("%1|%2|%3|%4").arg(productName, quantity, price, about);
         QLabel *infoLabel = new QLabel("<h4>Основная информация</h4>");
         productLayout->addWidget(infoLabel);
         QTableWidget *infoTable = createTable(productInfoHeaders, {productData}, 4);
         productLayout->addWidget(infoTable);
 
-        // Поставки (таблица)
+        // Поставки (таблица). suppliesTable: "dd.MM.yyyy|qty|поставщик#..."
         QStringList suppliesHeaders = {"Дата поставки", "Кол-во", "Поставщик"};
-        QStringList suppliesData;
-        for (const QString &r : records) {
-            QString s = r.section('|', 8, 10);
-            if (!s.contains("N/A")) suppliesData.append(s);
-        }
+        QStringList suppliesData = data[6].split('#', Qt::SkipEmptyParts);
         QLabel *suppliesLabel = new QLabel("<h4>Поставки</h4>");
         productLayout->addWidget(suppliesLabel);
         if (!suppliesData.isEmpty()) {
@@ -290,13 +296,9 @@ void AboutForm::generateAbout()
             productLayout->addWidget(new QLabel("<i>Нет записей о поставках.</i>"));
         }
 
-        // Отгрузки (таблица)
+        // Отгрузки (таблица). shipmentsTable: "dd.MM.yyyy|qty|получатель#..."
         QStringList shipmentsHeaders = {"Дата отгрузки", "Кол-во", "Получатель"};
-        QStringList shipmentsData;
-        for (const QString &r : records) {
-            QString s = r.section('|', 5, 7);
-            if (!s.contains("N/A")) shipmentsData.append(s);
-        }
+        QStringList shipmentsData = data[8].split('#', Qt::SkipEmptyParts);
         QLabel *shipmentsLabel = new QLabel("<h4>Отгрузки</h4>");
         productLayout->addWidget(shipmentsLabel);
         if (!shipmentsData.isEmpty()) {
@@ -306,10 +308,10 @@ void AboutForm::generateAbout()
             productLayout->addWidget(new QLabel("<i>Нет записей об отгрузках.</i>"));
         }
 
-        // ←←←←←←←←←←←←←←←←←←←←←←←←←←←←←←←←←←←←←←←←←←←←←←←←←←
-        // ГРАФИКИ ПОСТАВОК И ОТГРУЗОК
-        addSupplyAndShipmentCharts(productLayout, records, productId);
-        // ←←←←←←←←←←←←←←←←←←←←←←←←←←←←←←←←←←←←←←←←←←←←←←←←←←
+        // ГРАФИКИ ПОСТАВОК И ОТГРУЗОК (из строк "yyyy-MM-dd:qty|...")
+        QMap<QDate, double> supplies  = parseGraphSeries(data[5]);
+        QMap<QDate, double> shipments = parseGraphSeries(data[7]);
+        addSupplyAndShipmentCharts(productLayout, supplies, shipments, quantity.toDouble(), productId);
 
         // Разделитель
         QFrame *line = new QFrame();

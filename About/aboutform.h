@@ -5,6 +5,8 @@
 #include <QWidget>
 #include <QScrollArea>
 #include <QVBoxLayout>
+#include <QMap>
+#include <QDate>
 
 class QCustomPlot;
 
@@ -31,7 +33,11 @@ private slots:
 
 private:
     Ui::AboutForm *ui;
-    void addSupplyAndShipmentCharts(QVBoxLayout *productLayout, const QStringList &records, qint64 articleNumber);
+    void addSupplyAndShipmentCharts(QVBoxLayout *productLayout,
+                                    const QMap<QDate, double> &supplies,
+                                    const QMap<QDate, double> &shipments,
+                                    double currentStock,
+                                    qint64 articleNumber);
 };
 
 #endif // ABOUTFORM_H

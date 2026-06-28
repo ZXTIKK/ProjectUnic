@@ -3,11 +3,9 @@
 
 #include <QCompleter>
 #include <QMessageBox>
-#include <QLocale>
 #include <QDate>
 
 #include "../MainWindow/mainwindow.h"
-#include "../BusinessLogic/ProductManager/productmanager.h"
 #include "../BusinessLogic/ProductManager/productmanager.h"
 
 AddSupplyForm::AddSupplyForm(QWidget *parent)
@@ -53,14 +51,9 @@ void AddSupplyForm::on_pushButton_conf_clicked()
         return;
     }
 
-    bool okPrice;
-
-    QLocale locale;
-
     QDate supplyDate = ui->dateEdit_date->date();
 
-
-    ProductManager::addSupply(article.toInt(),quantity,supplyDate,supplier);
+    ProductManager::addSupply(article.toLongLong(), quantity, supplyDate, supplier);
 
     emit cancelAddSupply();
 

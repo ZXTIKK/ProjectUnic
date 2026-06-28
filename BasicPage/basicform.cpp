@@ -195,8 +195,10 @@ void BasicForm::addDataInTable(QStringList products){
     for (int i = 0; i < products.length(); i++) {
         QStringList parts = products[i].split(" | ", Qt::SkipEmptyParts);
 
-        if (parts.length() < 11) {
-            qCritical() << "Неверное количество полей (ожидалось 11) в строке:" << products[i];
+        // getAllProducts() даёт 5 полей (id, name, quantity, price, about),
+        // findProduct() — 11 (с движениями). Таблице нужны только первые четыре.
+        if (parts.length() < 5) {
+            qCritical() << "Неверное количество полей (ожидалось минимум 5) в строке:" << products[i];
             continue;
         }
 

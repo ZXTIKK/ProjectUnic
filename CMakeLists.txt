@@ -14,8 +14,6 @@ find_package(Qt6 REQUIRED COMPONENTS Core Gui Widgets Sql PrintSupport)
 set(PROJECT_SOURCES
     main.cpp
 
-    # ... (весь ваш список исходников)
-    BusinessLogic/QCustomPlot/qcustomplot.cpp
     BusinessLogic/ProductManager/productmanager.cpp
     BusinessLogic/ProductManager/productmanager.h
     BusinessLogic/Authentication/authentication.cpp
@@ -50,15 +48,13 @@ set(PROJECT_SOURCES
     About/aboutform.h
     UIfiles/aboutform.ui
     BusinessLogic/OutputExcel/outputexcel.cpp
+    BusinessLogic/OutputExcel/outputexcel.h
 )
 
-# ==========================================================
-# !!! КРИТИЧНОЕ ИСПРАВЛЕНИЕ: ДОБАВЛЕНИЕ ИСПОЛНЯЕМОГО ФАЙЛА
-# ==========================================================
 add_executable(ProjectUnic ${PROJECT_SOURCES})
-# Теперь ProjectUnic определен!
 
 target_sources(ProjectUnic PRIVATE
+    BusinessLogic/QCustomPlot/qcustomplot.cpp
     BusinessLogic/QCustomPlot/qcustomplot.h
 )
 
