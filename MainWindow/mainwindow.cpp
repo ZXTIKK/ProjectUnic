@@ -91,6 +91,8 @@ MainWindow::MainWindow(QWidget *parent)
             this, &MainWindow::switchToAboutForm);
     connect(aboutForm, &AboutForm::cancelAbout,
             this, &MainWindow::switchToBasicForm);
+    connect(addShipmentForm, &AddShipmentForm::cancelAddShipment,
+            basicForm, &BasicForm::updateDate);
 
 
 }

@@ -106,14 +106,16 @@ void BasicForm::on_pushButton_find_clicked(){
                 );
         }else{
             addDataInTable(dataFind);
+            flagChangeTable = true;
         }
     }else return;
 }
 
 void BasicForm::on_pushButton_deleteFind_clicked(){
-    if(!ui->lineEdit_find->text().trimmed().isEmpty()){
+    if(!ui->lineEdit_find->text().trimmed().isEmpty() || flagChangeTable){
         ui->lineEdit_find->clear();
         updateDate();
+        flagChangeTable = false;
     }
 }
 

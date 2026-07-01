@@ -22,6 +22,7 @@ private:
     Ui::BasicForm *ui;
     QPointer<QTableWidget> m_tableProducts;
     QPointer<QLabel> m_labelNotFound;
+    bool flagChangeTable =false;
     void clearScrollArea();
     void addDataInTable(QStringList products);
 
