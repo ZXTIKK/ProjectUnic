@@ -300,6 +300,12 @@
    </item>
   </layout>
  </widget>
+ <tabstops>
+  <tabstop>lineEdit_login</tabstop>
+  <tabstop>lineEdit_password</tabstop>
+  <tabstop>pushButton_auth</tabstop>
+  <tabstop>pushButton_settings</tabstop>
+ </tabstops>
  <resources/>
  <connections/>
 </ui>

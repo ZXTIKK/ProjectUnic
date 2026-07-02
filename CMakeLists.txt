@@ -1,5 +1,5 @@
 cmake_minimum_required(VERSION 3.16)
-project(ProjectUnic VERSION 0.1 LANGUAGES CXX)
+project(Invex VERSION 0.1 LANGUAGES CXX)
 
 set(CMAKE_CXX_STANDARD 17)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
@@ -13,7 +13,6 @@ find_package(Qt6 REQUIRED COMPONENTS Core Gui Widgets Sql PrintSupport)
 
 set(PROJECT_SOURCES
     main.cpp
-
     BusinessLogic/ProductManager/productmanager.cpp
     BusinessLogic/ProductManager/productmanager.h
     BusinessLogic/Authentication/authentication.cpp
@@ -51,9 +50,21 @@ set(PROJECT_SOURCES
     BusinessLogic/OutputExcel/outputexcel.h
 )
 
-add_executable(ProjectUnic ${PROJECT_SOURCES})
+if(WIN32)
+    set(GENERATED_RC_FILE "${CMAKE_CURRENT_BINARY_DIR}/generated_app.rc")
+    file(WRITE "${GENERATED_RC_FILE}" "IDI_ICON1 ICON DISCARDABLE \"${CMAKE_CURRENT_SOURCE_DIR}/Res/iconApp.ico\"\n")
+    set(APP_ICON_SOURCES "${GENERATED_RC_FILE}")
+endif()
 
-target_sources(ProjectUnic PRIVATE
+add_executable(Invex ${PROJECT_SOURCES} ${APP_ICON_SOURCES})
+
+add_custom_command(TARGET Invex POST_BUILD
+    COMMAND ${CMAKE_COMMAND} -E copy_directory
+    "${CMAKE_CURRENT_SOURCE_DIR}/Res"
+    "$<TARGET_FILE_DIR:Invex>/Res"
+)
+
+target_sources(Invex PRIVATE
     BusinessLogic/QCustomPlot/qcustomplot.cpp
     BusinessLogic/QCustomPlot/qcustomplot.h
 )
@@ -62,11 +73,11 @@ set_source_files_properties(BusinessLogic/QCustomPlot/qcustomplot.cpp
     PROPERTIES SKIP_AUTOMOC ON
 )
 
-target_include_directories(ProjectUnic PRIVATE
+target_include_directories(Invex PRIVATE
     BusinessLogic/QCustomPlot
 )
 
-target_link_libraries(ProjectUnic PRIVATE
+target_link_libraries(Invex PRIVATE
     Qt6::Core
     Qt6::Gui
     Qt6::Widgets
@@ -75,20 +86,51 @@ target_link_libraries(ProjectUnic PRIVATE
 )
 
 if(MINGW)
-    target_link_options(ProjectUnic PRIVATE -Wa,-mbig-obj)
-    target_compile_options(ProjectUnic PRIVATE -Wa,-mbig-obj)
-    target_compile_options(ProjectUnic PRIVATE -Wno-deprecated-declarations)
+    target_link_options(Invex PRIVATE -Wa,-mbig-obj)
+    target_compile_options(Invex PRIVATE -Wa,-mbig-obj)
+    target_compile_options(Invex PRIVATE -Wno-deprecated-declarations)
 endif()
 
-set_target_properties(ProjectUnic PROPERTIES
+target_compile_definitions(Invex PRIVATE
+    $<$<CONFIG:Release>:QT_NO_DEBUG_OUTPUT>
+)
+
+set_target_properties(Invex PROPERTIES
     MACOSX_BUNDLE ON
     WIN32_EXECUTABLE ON
 )
 
+if(WIN32)
+    get_target_property(_qmake_executable Qt6::qmake LOCATION)
+    get_filename_component(_qt_bin_dir "${_qmake_executable}" DIRECTORY)
+    find_program(WINDEPLOYQT_EXECUTABLE windeployqt HINTS "${_qt_bin_dir}")
+
+    if(WINDEPLOYQT_EXECUTABLE)
+        add_custom_command(TARGET Invex POST_BUILD
+            COMMAND ${WINDEPLOYQT_EXECUTABLE}
+            --verbose 1
+            --no-compiler-runtime
+            --plugindir \"$<TARGET_FILE_DIR:Invex>/plugins\"
+            --sql
+            \"$<TARGET_FILE:Invex>\"
+        )
+    endif()
+
+    if(MINGW)
+        get_filename_component(MINGW_BIN_DIR "${CMAKE_CXX_COMPILER}" DIRECTORY)
+
+        add_custom_command(TARGET Invex POST_BUILD
+            COMMAND ${CMAKE_COMMAND} -E copy_if_different "${MINGW_BIN_DIR}/libstdc++-6.dll" "$<TARGET_FILE_DIR:Invex>/"
+            COMMAND ${CMAKE_COMMAND} -E copy_if_different "${MINGW_BIN_DIR}/libgcc_s_seh-1.dll" "$<TARGET_FILE_DIR:Invex>/"
+            COMMAND ${CMAKE_COMMAND} -E copy_if_different "${MINGW_BIN_DIR}/libwinpthread-1.dll" "$<TARGET_FILE_DIR:Invex>/"
+        )
+    endif()
+endif()
+
 include(GNUInstallDirs)
-install(TARGETS ProjectUnic
+install(TARGETS Invex
     BUNDLE DESTINATION .
     RUNTIME DESTINATION ${CMAKE_INSTALL_BINDIR}
 )
 
-qt_finalize_executable(ProjectUnic)
+qt_finalize_executable(Invex)
