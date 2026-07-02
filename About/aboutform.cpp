@@ -12,11 +12,11 @@
 #include <QFrame>
 #include <QFileDialog>
 #include <QStandardPaths>
-#include <QTemporaryDir>
 #include <QFile>
 #include <QFileInfo>
 #include <QMessageBox>
 #include <QDateTime>
+#include <QBuffer>
 #include "../BusinessLogic/QCustomPlot/qcustomplot.h"
 
 #include "../MainWindow/mainwindow.h"
@@ -53,7 +53,6 @@ void AboutForm::on_pushButton_back_clicked()
     emit cancelAbout();
 }
 
-// Разбирает строку графика "yyyy-MM-dd:qty|yyyy-MM-dd:qty|" в карту дата→количество.
 static QMap<QDate, double> parseGraphSeries(const QString &series)
 {
     QMap<QDate, double> result;
@@ -71,7 +70,6 @@ static QMap<QDate, double> parseGraphSeries(const QString &series)
     return result;
 }
 
-// Вспомогательная функция: создаёт QTableWidget
 QTableWidget* createTable(const QStringList &headers, const QStringList &data, int columnsCount)
 {
     QTableWidget *table = new QTableWidget();
@@ -96,8 +94,6 @@ QTableWidget* createTable(const QStringList &headers, const QStringList &data, i
     return table;
 }
 
-// Добавляет два графика — поставки и отгрузки. Данные приходят уже
-// расшифрованными и сгруппированными по датам из getProductDataById().
 void AboutForm::addSupplyAndShipmentCharts(QVBoxLayout *productLayout,
                                            const QMap<QDate, double> &supplies,
                                            const QMap<QDate, double> &shipments,
@@ -129,7 +125,6 @@ void AboutForm::addSupplyAndShipmentCharts(QVBoxLayout *productLayout,
         stockLevel[d] = stock;
     }
 
-    // Красивый контейнер
     QFrame *box = new QFrame();
     box->setStyleSheet(R"(
         QFrame { background: qlineargradient(x1:0,y:0,x2:0,y2:1, stop:0 #fdfdfd, stop:1 #f0f8ff);
@@ -137,7 +132,6 @@ void AboutForm::addSupplyAndShipmentCharts(QVBoxLayout *productLayout,
     )");
     QVBoxLayout *mainLay = new QVBoxLayout(box);
 
-    // Заголовок — теперь только «Артикул»
     QLabel *header = new QLabel(QString(
                                     "<h3 style='color:#2c3e50; margin:12px; font-weight:bold;'>"
                                     "Артикул: <span style='color:#e74c3c; font-size:18pt;'>%1</span><br>"
@@ -152,7 +146,6 @@ void AboutForm::addSupplyAndShipmentCharts(QVBoxLayout *productLayout,
     auto dateTicker = QSharedPointer<QCPAxisTickerDateTime>(new QCPAxisTickerDateTime);
     dateTicker->setDateTimeFormat("dd.MM");
 
-    // Остаток
     QCustomPlot *plotStock = new QCustomPlot();
     plotStock->setMinimumHeight(230);
     plotStock->setBackground(QColor(250, 255, 255));
@@ -177,7 +170,6 @@ void AboutForm::addSupplyAndShipmentCharts(QVBoxLayout *productLayout,
     plotStock->replot();
     mainLay->addWidget(plotStock);
 
-    // Сводный график: поставки вверх, отгрузки вниз
     QCustomPlot *plotCombined = new QCustomPlot();
     plotCombined->setMinimumHeight(210);
 
@@ -220,7 +212,7 @@ void AboutForm::addSupplyAndShipmentCharts(QVBoxLayout *productLayout,
 
     productLayout->addWidget(box);
 }
-// Основная функция генерации страницы
+
 void AboutForm::generateAbout()
 {
     QVBoxLayout *mainLayout = qobject_cast<QVBoxLayout*>(ui->scrollArea->widget()->layout());
@@ -229,7 +221,6 @@ void AboutForm::generateAbout()
         return;
     }
 
-    // Очищаем старое содержимое
     while (QLayoutItem *item = mainLayout->takeAt(0)) {
         if (item->widget()) item->widget()->deleteLater();
         delete item;
@@ -244,15 +235,10 @@ void AboutForm::generateAbout()
         return;
     }
 
-    // getAllProducts() возвращает по одной строке на товар. Берём из неё только
-    // ID, а детальные данные (движения) запрашиваем через getProductDataById().
     for (const QString &record : allProductsData) {
         QString idStr = record.section(':', 1, 1).section('|', 0, 0).trimmed();
         qint64 productId = idStr.toLongLong();
 
-        // Полные данные товара:
-        // 0=id 1=name 2=about 3=price 4=quantity
-        // 5=suppliesGraph 6=suppliesTable 7=shipmentsGraph 8=shipmentsTable
         QStringList data = ProductManager::getProductDataById(productId);
         if (data.size() < 9) {
             qWarning() << "Пропуск товара" << productId << "— недостаточно данных:" << data.size();
@@ -272,11 +258,9 @@ void AboutForm::generateAbout()
         productBlock->setStyleSheet("#" + productBlock->objectName() +
                                     " { border: 1px solid #CCCCCC; padding: 10px; margin: 10px; }");
 
-        // Название продукта
         QLabel *titleLabel = new QLabel(QString("<h3>Продукт ID %1: %2</h3>").arg(productId).arg(productName));
         productLayout->addWidget(titleLabel);
 
-        // Основная информация
         QStringList productInfoHeaders = {"Название", "Кол-во", "Цена", "Описание"};
         QString productData = QString("%1|%2|%3|%4").arg(productName, quantity, price, about);
         QLabel *infoLabel = new QLabel("<h4>Основная информация</h4>");
@@ -284,7 +268,6 @@ void AboutForm::generateAbout()
         QTableWidget *infoTable = createTable(productInfoHeaders, {productData}, 4);
         productLayout->addWidget(infoTable);
 
-        // Поставки (таблица). suppliesTable: "dd.MM.yyyy|qty|поставщик#..."
         QStringList suppliesHeaders = {"Дата поставки", "Кол-во", "Поставщик"};
         QStringList suppliesData = data[6].split('#', Qt::SkipEmptyParts);
         QLabel *suppliesLabel = new QLabel("<h4>Поставки</h4>");
@@ -296,7 +279,6 @@ void AboutForm::generateAbout()
             productLayout->addWidget(new QLabel("<i>Нет записей о поставках.</i>"));
         }
 
-        // Отгрузки (таблица). shipmentsTable: "dd.MM.yyyy|qty|получатель#..."
         QStringList shipmentsHeaders = {"Дата отгрузки", "Кол-во", "Получатель"};
         QStringList shipmentsData = data[8].split('#', Qt::SkipEmptyParts);
         QLabel *shipmentsLabel = new QLabel("<h4>Отгрузки</h4>");
@@ -308,12 +290,10 @@ void AboutForm::generateAbout()
             productLayout->addWidget(new QLabel("<i>Нет записей об отгрузках.</i>"));
         }
 
-        // ГРАФИКИ ПОСТАВОК И ОТГРУЗОК (из строк "yyyy-MM-dd:qty|...")
         QMap<QDate, double> supplies  = parseGraphSeries(data[5]);
         QMap<QDate, double> shipments = parseGraphSeries(data[7]);
         addSupplyAndShipmentCharts(productLayout, supplies, shipments, quantity.toDouble(), productId);
 
-        // Разделитель
         QFrame *line = new QFrame();
         line->setFrameShape(QFrame::HLine);
         line->setFrameShadow(QFrame::Sunken);
@@ -375,16 +355,6 @@ void AboutForm::on_pushButton_Word_clicked()
 
     QString fullHtmlPath = QString("%1/%2.html").arg(savePath, fileName);
 
-    // === 2. Добавляем в конец отчёта ВСЕ графики по всем артикулам ===
-    QTemporaryDir tempDir;
-    if (!tempDir.isValid()) {
-        QMessageBox::warning(this, "Ошибка", "Не удалось создать временную папку.");
-        return;
-    }
-
-    QStringList imagePaths;
-
-    // Собираем ВСЕ QCustomPlot из scrollArea (все артикулы!)
     QList<QCustomPlot*> allPlots = ui->scrollArea->widget()->findChildren<QCustomPlot*>();
 
     if (allPlots.isEmpty()) {
@@ -392,14 +362,6 @@ void AboutForm::on_pushButton_Word_clicked()
         return;
     }
 
-    for (int i = 0; i < allPlots.size(); ++i) {
-        QCustomPlot *plot = allPlots[i];
-        QString imgPath = tempDir.path() + QString("/graph_%1.png").arg(i + 1, 3, 10, QChar('0'));
-        plot->savePng(imgPath, 0, 0, 1.5, -1); // качество чуть выше
-        imagePaths << imgPath;
-    }
-
-    // Вставляем все графики в HTML
     QFile file(fullHtmlPath);
     if (file.open(QIODevice::ReadWrite | QIODevice::Text)) {
         QString content = QString::fromUtf8(file.readAll());
@@ -409,15 +371,18 @@ void AboutForm::on_pushButton_Word_clicked()
             <h2 style="text-align:center; color:#2c3e50; font-family: Arial;">Графики движения по всем артикулам</h2>
             <p style="text-align:center; color:#7f8c8d;">Всего графиков: )" + QString::number(allPlots.size()) + "</p>";
 
-        for (const QString &img : imagePaths) {
-            QString finalImg = savePath + "/" + QFileInfo(img).fileName();
-            QFile::copy(img, finalImg);
+        for (QCustomPlot *plot : allPlots) {
+            QBuffer buffer;
+            buffer.open(QIODevice::WriteOnly);
+            plot->toPixmap().save(&buffer, "PNG");
+
+            QString base64Image = QString::fromLatin1(buffer.data().toBase64());
 
             imagesHtml += QString(R"(
                 <div style="page-break-inside: avoid; margin: 40px auto; text-align:center;">
-                    <img src="%1" style="max-width:95%; border:3px solid #3498db; border-radius:16px; box-shadow: 0 8px 20px rgba(0,0,0,0.15);">
+                    <img src="data:image/png;base64,%1" style="max-width:95%; border:3px solid #3498db; border-radius:16px; box-shadow: 0 8px 20px rgba(0,0,0,0.15);">
                 </div>
-            )").arg(QFileInfo(finalImg).fileName());
+            )").arg(base64Image);
         }
 
         content.replace("</body>", imagesHtml + "</body>");
@@ -428,9 +393,9 @@ void AboutForm::on_pushButton_Word_clicked()
         QMessageBox::information(this, "Готово!",
                                  QString("Полный отчёт по <b>всем артикулам</b> сохранён!\n\n"
                                          "• Таблица товаров\n"
-                                         "• %1 график(ов)\n\n"
-                                         "%2/%3.html")
+                                         "• %1 график(ов) (встроены в файл)\n\n"
+                                         "%2")
                                      .arg(allPlots.size())
-                                     .arg(savePath, fileName));
+                                     .arg(fullHtmlPath));
     }
 }
