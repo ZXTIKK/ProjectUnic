@@ -14,6 +14,7 @@ private:
 public:
     static bool authentication(QString login, QString password);
     static bool userAuth();
+    static bool unUserAuth();
     static QSqlDatabase getConnect();
 };
 

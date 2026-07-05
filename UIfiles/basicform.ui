@@ -360,6 +360,38 @@
        </property>
       </spacer>
      </item>
+     <item>
+      <widget class="QPushButton" name="pushButton_logout">
+       <property name="minimumSize">
+        <size>
+         <width>150</width>
+         <height>30</height>
+        </size>
+       </property>
+       <property name="font">
+        <font>
+         <family>Leelawadee UI</family>
+         <pointsize>11</pointsize>
+        </font>
+       </property>
+       <property name="text">
+        <string>Выйти</string>
+       </property>
+      </widget>
+     </item>
+     <item>
+      <spacer name="horizontalSpacer_12">
+       <property name="orientation">
+        <enum>Qt::Orientation::Horizontal</enum>
+       </property>
+       <property name="sizeHint" stdset="0">
+        <size>
+         <width>40</width>
+         <height>20</height>
+        </size>
+       </property>
+      </spacer>
+     </item>
     </layout>
    </item>
    <item row="1" column="0">
@@ -411,6 +443,17 @@
    </item>
   </layout>
  </widget>
+ <tabstops>
+  <tabstop>pushButton_supply</tabstop>
+  <tabstop>pushButton_ShipmentForm</tabstop>
+  <tabstop>pushButton_add</tabstop>
+  <tabstop>pushButton_about</tabstop>
+  <tabstop>pushButton_logout</tabstop>
+  <tabstop>lineEdit_find</tabstop>
+  <tabstop>pushButton_deleteFind</tabstop>
+  <tabstop>pushButton_find</tabstop>
+  <tabstop>scrollArea</tabstop>
+ </tabstops>
  <resources/>
  <connections/>
 </ui>

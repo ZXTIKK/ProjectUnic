@@ -4,6 +4,7 @@
 #include "../LoginPage/loginform.h"
 #include "../MainWindow/mainwindow.h"
 #include "../BusinessLogic/ProductManager/productmanager.h"
+#include "../BusinessLogic/Authentication/authentication.h"
 
 #include <QTableWidget>
 #include <QPushButton>
@@ -117,6 +118,11 @@ void BasicForm::on_pushButton_deleteFind_clicked(){
         updateDate();
         flagChangeTable = false;
     }
+}
+
+void BasicForm::on_pushButton_logout_clicked() {
+    Authentication::unUserAuth();
+    emit logOut();
 }
 
 void BasicForm::addDataInTable(QStringList products){

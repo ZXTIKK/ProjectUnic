@@ -97,7 +97,7 @@ target_compile_definitions(Invex PRIVATE
 
 set_target_properties(Invex PROPERTIES
     MACOSX_BUNDLE ON
-    WIN32_EXECUTABLE ON
+    WIN32_EXECUTABLE $<NOT:$<CONFIG:Debug>>
 )
 
 if(WIN32)
@@ -105,15 +105,30 @@ if(WIN32)
     get_filename_component(_qt_bin_dir "${_qmake_executable}" DIRECTORY)
     find_program(WINDEPLOYQT_EXECUTABLE windeployqt HINTS "${_qt_bin_dir}")
 
+    set(PG_BIN_DIR "C:/Program Files/PostgreSQL/18/bin")
+
     if(WINDEPLOYQT_EXECUTABLE)
         add_custom_command(TARGET Invex POST_BUILD
             COMMAND ${WINDEPLOYQT_EXECUTABLE}
             --verbose 1
             --no-compiler-runtime
-            --plugindir \"$<TARGET_FILE_DIR:Invex>/plugins\"
+            --dir "$<TARGET_FILE_DIR:Invex>"
             --sql
-            \"$<TARGET_FILE:Invex>\"
+            "$<TARGET_FILE:Invex>"
+            COMMAND ${CMAKE_COMMAND} -E copy_directory
+            "${_qt_bin_dir}/../plugins/sqldrivers"
+            "$<TARGET_FILE_DIR:Invex>/sqldrivers"
         )
+
+        if(EXISTS "${PG_BIN_DIR}")
+            add_custom_command(TARGET Invex POST_BUILD
+                COMMAND ${CMAKE_COMMAND} -E copy_if_different "${PG_BIN_DIR}/libpq.dll" "$<TARGET_FILE_DIR:Invex>/"
+                COMMAND ${CMAKE_COMMAND} -E copy_if_different "${PG_BIN_DIR}/libcrypto-3-x64.dll" "$<TARGET_FILE_DIR:Invex>/"
+                COMMAND ${CMAKE_COMMAND} -E copy_if_different "${PG_BIN_DIR}/libssl-3-x64.dll" "$<TARGET_FILE_DIR:Invex>/"
+                COMMAND ${CMAKE_COMMAND} -E copy_if_different "${PG_BIN_DIR}/libintl-9.dll" "$<TARGET_FILE_DIR:Invex>/"
+                COMMAND ${CMAKE_COMMAND} -E copy_if_different "${PG_BIN_DIR}/libiconv-2.dll" "$<TARGET_FILE_DIR:Invex>/"
+            )
+        endif()
     endif()
 
     if(MINGW)

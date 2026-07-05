@@ -38,6 +38,7 @@ private slots:
     void on_pushButton_supply_clicked();
     void on_pushButton_ShipmentForm_clicked();
     void on_pushButton_about_clicked();
+    void on_pushButton_logout_clicked();
 
 signals:
     void PageAdd();
@@ -45,6 +46,7 @@ signals:
     void switchToAddSupplyForm();
     void switchToAddShipmentForm();
     void switchToAbout();
+    void logOut();
 };
 
 #endif // BASICFORM_H

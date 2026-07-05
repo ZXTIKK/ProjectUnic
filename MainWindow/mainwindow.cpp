@@ -93,6 +93,8 @@ MainWindow::MainWindow(QWidget *parent)
             this, &MainWindow::switchToBasicForm);
     connect(addShipmentForm, &AddShipmentForm::cancelAddShipment,
             basicForm, &BasicForm::updateDate);
+    connect(basicForm, &BasicForm::logOut,
+            this, &MainWindow::switchToLoginPage);
 
 
 }

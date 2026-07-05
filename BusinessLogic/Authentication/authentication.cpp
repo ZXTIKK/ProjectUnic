@@ -52,7 +52,16 @@ bool Authentication::createConnect(QString login, QString password)
 bool Authentication::userAuth()
 {
     qDebug() << "userAuth: Проверка статуса аутентификации";
-    return userConnect;
+    return userConnect && getConnect().isOpen();
+}
+
+bool Authentication::unUserAuth(){
+    if(userAuth()){
+        userConnect = false;
+        getConnect().close();
+        return true;
+    }
+    return false;
 }
 
 QSqlDatabase Authentication::getConnect()
